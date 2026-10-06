@@ -1214,7 +1214,7 @@
 
   // ---------- terminal de atendimento ----------
   function novoRascunho() {
-    return { voo: null, paxs: [{ nome: "", doc: "", assento: null, peso: 0 }], ativo: 0, email: "", tel: "", classe: "ECON", bags: 0, pag: "CARTAO", milhas: 0, opc: { classe: false, malota: false, peso: false, pag: false } };
+    return { voo: null, paxs: [{ nome: "", doc: "", assento: null, peso: 0 }], ativo: 0, email: "", tel: "", classe: "ECON", bags: 0, pag: "CARTAO", milhas: 0, opc: { classe: false, malota: false, peso: false, pag: false, milhas: false } };
   }
 
   const T = {
@@ -1693,6 +1693,7 @@
     if (!max) return termErro(["ERRO: SALDO INSUFICIENTE DE MILHAS NA " + DATA.AIRLINES[al] + " (" + fmtMil(milhasSaldo(al)) + " MILHAS)."]);
     const usar = Math.min(n, max);
     R.milhas = usar;
+    R.opc.milhas = true;
     const tit = via === "ABATER" ? "ABATE DE " + fmtMil(usar) + " MILHAS NA PASSAGEM" : "RESGATE DE " + fmtMil(usar) + " MILHAS";
     termPrint([
       "OK: " + tit + " = -" + taxaTxt(milhasValor(usar)),
@@ -1707,6 +1708,11 @@
     const txt = String(arg || "").trim();
     if (!txt) return milhasListagem();
     const n = Number(txt.replace(/\D/g, ""));
+    if (n === 0 && /^0+$/.test(txt)) {
+      T.rascunho.milhas = 0;
+      T.rascunho.opc.milhas = true;
+      return termPrint(["OK: NENHUMA MILHA RESGATADA - PASSAGEM SEM DESCONTO DE MILHAS"], "sys");
+    }
     if (!(n > 0)) return termErro(["ERRO: USE MILHAS <N> EX.: MILHAS 500.", "MILHAS 1000 = R$ 10,00 DE DESCONTO."]);
     termResgatar(n, "MILHAS");
   }
@@ -1927,6 +1933,7 @@
     }
     T.rascunho.voo = f;
     T.rascunho.milhas = 0;
+    T.rascunho.opc.milhas = false;
     T.guia = true;
     const ocVoo = ocupados(f);
     T.rascunho.paxs.forEach((p) => {
@@ -1957,7 +1964,14 @@
     if (!R.opc.classe) return ["CLASSE DA PASSAGEM", "ECON OU EXEC"];
     if (!R.opc.malota) return ["MALOTAS DESPACHADAS", "0, 1 OU 2"];
     if (!R.opc.peso) return ["PESO DA BAGAGEM EM KG", "<KG>   FRANQUIA " + franquiaKg(R.classe) + " KG, EXCESSO R$ 6,00 POR KG"];
-    if (!R.opc.pag) return ["FORMA DE PAGAMENTO", "CARTAO, PIX, BOLETO OU BALCAO"];
+    if (!R.opc.milhas && cartaoAtivo()) {
+      const al = R.voo.al;
+      const max = milhasMaxUsar(al, brutoRascunho(R));
+      return ["RESGATE DE MILHAS (OPCIONAL)",
+        (max ? "ATE " + fmtMil(max) + " MILHAS = " + taxaTxt(milhasValor(max)) + "  ·  " : "") +
+        "SALDO " + fmtMil(milhasSaldo(al)) + " MILHAS  ·  DIGITE 0 PARA NAO USAR"];
+    }
+    if (!R.opc.pag) return ["FORMA DE PAGAMENTO", "CARTAO, PIX, BOLETO OU BALCAO" + (cartaoAtivo() ? "" : "   ·   ACUMULE MILHAS: CADASTRAR <NOME>")];
     return null;
   }
 
@@ -1986,6 +2000,7 @@
     if (!R.opc.classe) return execCmd("CLASSE", valor);
     if (!R.opc.malota) return execCmd("MALOTA", valor);
     if (!R.opc.peso) return execCmd("PESO", valor);
+    if (!R.opc.milhas && cartaoAtivo()) return execCmd("MILHAS", valor);
     if (!R.opc.pag) return execCmd("PAGAMENTO", valor);
   }
 

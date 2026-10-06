@@ -1946,18 +1946,18 @@
     const R = T.rascunho;
     if (!R.voo) return null;
     const p = R.paxs[R.ativo];
-    if (!p.nome) return ["NOME DO PASSAGEIRO ATIVO P" + (R.ativo + 1), "PASSAGEIRO <NOME COMPLETO>"];
+    if (!p.nome) return ["NOME DO PASSAGEIRO ATIVO P" + (R.ativo + 1), "<NOME COMPLETO>"];
     if (!p.doc) return internacional(R.voo)
-      ? ["PASSAPORTE DO PASSAGEIRO P" + (R.ativo + 1), "DOC <NUMERO> (PASSAPORTE)"]
-      : ["DOCUMENTO DO PASSAGEIRO P" + (R.ativo + 1), "DOC <NUMERO>"];
-    if (!R.email) return ["E-MAIL DE CONTATO", "EMAIL <ENDERECO>"];
-    if (!R.tel) return ["TELEFONE COM DDD", "TELEFONE <NUMERO>"];
+      ? ["PASSAPORTE DO PASSAGEIRO P" + (R.ativo + 1), "<NUMERO DO PASSAPORTE>"]
+      : ["DOCUMENTO DO PASSAGEIRO P" + (R.ativo + 1), "<CPF>"];
+    if (!R.email) return ["E-MAIL DE CONTATO", "<ENDERECO DE E-MAIL>"];
+    if (!R.tel) return ["TELEFONE COM DDD", "<NUMERO COM DDD>"];
     const sem = R.paxs.findIndex((x) => !x.assento);
-    if (sem >= 0) return ["ASSENTO DO PASSAGEIRO P" + (sem + 1), "ASSENTO <12A>  OU  ASSENTOLIVRE"];
-    if (!R.opc.classe) return ["CLASSE DA PASSAGEM", "CLASSE ECON  OU  CLASSE EXEC"];
-    if (!R.opc.malota) return ["MALOTAS DESPACHADAS", "MALOTA 0  OU  1  OU  2"];
-    if (!R.opc.peso) return ["PESO DA BAGAGEM EM KG", "PESO <KG>   FRANQUIA " + franquiaKg(R.classe) + " KG, EXCESSO R$ 6,00 POR KG"];
-    if (!R.opc.pag) return ["FORMA DE PAGAMENTO", "PAGAMENTO CARTAO  OU  PIX  OU  BOLETO  OU  BALCAO"];
+    if (sem >= 0) return ["ASSENTO DO PASSAGEIRO P" + (sem + 1), "<12A>  OU  ASSENTOLIVRE"];
+    if (!R.opc.classe) return ["CLASSE DA PASSAGEM", "ECON OU EXEC"];
+    if (!R.opc.malota) return ["MALOTAS DESPACHADAS", "0, 1 OU 2"];
+    if (!R.opc.peso) return ["PESO DA BAGAGEM EM KG", "<KG>   FRANQUIA " + franquiaKg(R.classe) + " KG, EXCESSO R$ 6,00 POR KG"];
+    if (!R.opc.pag) return ["FORMA DE PAGAMENTO", "CARTAO, PIX, BOLETO OU BALCAO"];
     return null;
   }
 
@@ -1968,7 +1968,7 @@
       termPrint(["", ">>> TUDO PREENCHIDO - DIGITE CONFIRMAR PARA EMITIR A RESERVA."], "hl");
       return;
     }
-    termPrint(["", ">>> PROXIMO PASSO: " + s[0], "    USE: " + s[1] + "   OU DIGITE O VALOR DIRETO"], "sys");
+    termPrint(["", ">>> PROXIMO PASSO: " + s[0], "    DIGITE APENAS: " + s[1]], "sys");
   }
 
   function entradaPasso(valor) {
@@ -2006,7 +2006,7 @@
       const p = rPax();
       const intl = chave === "doc" && internacional(T.rascunho.voo);
       if (intl && !passaporteOk(valor)) {
-        termErro(["ERRO: VOO INTERNACIONAL EXIGE PASSAPORTE.", "USE: DOC <NUMERO>  EX.: DOC AB123456"]);
+        termErro(["ERRO: VOO INTERNACIONAL EXIGE PASSAPORTE.", "DIGITE APENAS O NUMERO. EX.: AB123456"]);
         return;
       }
       p[chave] = valor.trim();

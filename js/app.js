@@ -1224,10 +1224,12 @@
   const COMANDOS = ["AJUDA", "VOOS", "CHEGADAS", "ROTA", "RES", "TO", "DATA", "SITUACAO", "TARIFA", "VALOR", "MILHAS",
     "LISTAR", "ABATER", "CARTAO", "CADASTRAR", "RESERVAR", "PASSAGEIRO", "PASSAGEIROS", "ADICIONAR", "REMOVER", "ATIVO",
     "DOC", "EMAIL", "TELEFONE", "CLASSE", "PAGAMENTO", "ASSENTOS", "ASSENTO", "ASSENTOLIVRE", "MALOTA", "PESO",
-    "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR"];
+    "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
+    "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
-    "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS"];
+    "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS",
+    "*R", "*I", "X2", "ER"];
   const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
     "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
     "FONE", "PAG", "MAPA", "POLTRONA", "MALOTAS", "BAGAGEM", "RASCUNHO", "EMITIR", "LOCALIZAR", "PNR",
@@ -1276,14 +1278,23 @@
     ["NOVO", "NOVO ATENDIMENTO (DESCARTA O RASCUNHO)"],
     ["SOM", "ON OU OFF"],
     ["LIMPAR", "LIMPA A TELA"],
+    ["*R", "EXIBE O PNR EM ANDAMENTO"],
+    ["*I", "EXIBE O ITINERARIO"],
+    ["X2", "CANCELA O SEGMENTO DO VOO"],
+    ["ER", "GRAVA E EMITE O PNR"],
+    [".CE", "<CIDADE> CODIFICA CIDADE (EX.: .CE SALVADOR)"],
+    [".CD", "<AEROPORTO> DECODIFICA (EX.: .CD SSA)"],
+    [".AE", "LISTA AS COMPANHIAS AEREAS"],
+    ["SOF", "ENCERRA A SESSAO DO TERMINAL"],
     ["AJUDA", "LISTA COMPLETA NO TERMINAL"]
   ];
 
   function montarTermCmds() {
     const l = $("#tc-list");
     if (!l) return;
+    const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     l.innerHTML = TERM_CMDS.map((c) =>
-      '<button type="button" class="tc-item" data-i="' + c[0] + '"><b>' + c[0] + "</b><span>" + c[1] + "</span></button>"
+      '<button type="button" class="tc-item" data-i="' + esc(c[0]) + '"><b>' + esc(c[0]) + "</b><span>" + esc(c[1]) + "</span></button>"
     ).join("");
     l.addEventListener("click", (e) => {
       const b = e.target.closest(".tc-item");
@@ -1407,6 +1418,14 @@
       " NOVO ................ NOVO ATENDIMENTO (DESCARTA O RASCUNHO)",
       " SOM ON|OFF .......... LIGA OU DESLIGA O SOM DO TABULEIRO",
       " LIMPAR .............. LIMPA A TELA",
+      " *R .................. EXIBE O PNR EM ANDAMENTO",
+      " *I .................. EXIBE O ITINERARIO",
+      " X2 .................. CANCELA O SEGMENTO DO VOO",
+      " ER .................. GRAVA E EMITE O PNR",
+      " .CE <CIDADE> ........ CODIFICA CIDADE (EX.: .CE SALVADOR)",
+      " .CD <AEROPORTO> ..... DECODIFICA AEROPORTO (EX.: .CD SSA)",
+      " .AE ................. LISTA AS COMPANHIAS AEREAS",
+      " SOF ................. ENCERRA A SESSAO DO TERMINAL",
       "------------------------------------------------",
       "APOS O RESERVAR O TERMINAL AVANCA O PROXIMO PASSO SOZINHO",
       "TAB COMPLETA O COMANDO   SETA CIMA REPETE O ULTIMO",
@@ -1930,6 +1949,76 @@
     ], "sys");
   }
 
+  function termExibirPnr() {
+    const R = T.rascunho;
+    if (R.voo || R.paxs.some((p) => p.nome || p.doc)) return termStatus();
+    return termErro(["ERRO: NAO HA PNR EM ANDAMENTO.", "USE RESERVAR <VOO> PARA INICIAR OU CONSULTAR <PNR>."]);
+  }
+
+  function termItinerario() {
+    const R = T.rascunho;
+    const l = ["ITINERARIO DO ATENDIMENTO", "----------------------------------------"];
+    if (R.voo) {
+      l.push("  SEGMENTO 1: " + R.voo.no.replace(/\s/g, "") + "  " + rotaVoo(R.voo) + "  " + (R.voo.data || dataHoje()) + " " + hhmm(R.voo.ref));
+      l.push("  PASSAGEIROS: " + R.paxs.map((p) => (p.nome || "(SEM NOME)").toUpperCase()).join(" + "));
+      l.push("  ASSENTOS: " + R.paxs.map((p) => p.assento || "---").join(" "));
+    } else if (T.rota) {
+      l.push("  ROTA PREVISTA: " + T.rota.origem + " > " + T.rota.destino + "   DATA: " + (T.dia ? DATA.dataLonga(T.dia) : "HOJE"));
+      l.push("  NENHUM SEGMENTO RESERVADO. USE RESERVAR <VOO>.");
+    } else {
+      return termErro(["ERRO: ITINERARIO VAZIO.", "USE RESERVAR <VOO> OU ROTA <ORI> <DES> PARA MONTAR."]);
+    }
+    termPrint(l, "sys");
+  }
+
+  function termCancelarSegmento() {
+    const R = T.rascunho;
+    if (!R.voo) return termErro(["ERRO: NAO HA SEGMENTO ATIVO PARA CANCELAR.", "USE RESERVAR <VOO> PARA ESCOLHER O VOO."]);
+    const no = R.voo.no.replace(/\s/g, "");
+    R.voo = null;
+    R.milhas = 0;
+    R.opc.milhas = false;
+    R.paxs.forEach((p) => { p.assento = null; });
+    termPrint(["OK: SEGMENTO " + no + " CANCELADO - VOO REMOVIDO DO PNR.", "PROXIMO PASSO: RESERVAR <VOO> PARA ESCOLHER OUTRO."], "sys");
+  }
+
+  function termCodificarCidade(arg) {
+    const norm = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    const q = norm(arg);
+    if (!q) return termErro(["ERRO: USE .CE <CIDADE>. EX.: .CE SALVADOR"]);
+    const cods = Object.keys(DATA.AEROS);
+    let hits = cods.filter((k) => norm(DATA.AEROS[k].cidade) === q);
+    if (!hits.length) hits = cods.filter((k) => norm(DATA.AEROS[k].cidade).indexOf(q) === 0);
+    if (!hits.length) return termErro(["ERRO: CIDADE NAO ENCONTRADA: " + norm(arg), "EX.: .CE SALVADOR  OU  .CE SAO PAULO"]);
+    termPrint([DATA.AEROS[hits[0]].cidade + " = " + hits.join(", ")], "sys");
+  }
+
+  function termDecodificar(arg) {
+    const k = arg.trim().toUpperCase();
+    if (!DATA.AEROS[k]) return termErro(["ERRO: AEROPORTO DESCONHECIDO: " + (k || "?"), "EX.: .CD SSA"]);
+    termPrint([k + " = " + DATA.AEROS[k].cidade + "   AEROPORTO " + DATA.AEROS[k].nome], "sys");
+  }
+
+  function termCompanhias() {
+    const l = ["COMPANHIAS AEREAS"];
+    Object.keys(DATA.AIRLINES).forEach((k) => l.push("  " + pad(k, 5) + DATA.AIRLINES[k]));
+    l.push("USE .CD <CODIGO> PARA O AEROPORTO OU SITUACAO <VOO> PARA O VOO.");
+    termPrint(l, "sys");
+  }
+
+  function termSof() {
+    const tinha = !!T.rascunho.voo || T.rascunho.paxs.some((p) => p.nome);
+    T.guia = false;
+    T.rascunho = novoRascunho();
+    termPrint([
+      "SESSAO ENCERRADA.",
+      "----------------------------------------",
+      tinha ? "PNR EM ABERTO DESCARTADO." : "NENHUM PNR EM ABERTO.",
+      "OBRIGADO POR USAR O VOOU - ATE LOGO.",
+      "DIGITE RESERVAR <VOO> PARA INICIAR OUTRO ATENDIMENTO."
+    ], "hl");
+  }
+
   function termSom(arg) {
     const a = arg.toUpperCase().replace(/\s+/g, "");
     let ligado = Flap.ehLigado();
@@ -2012,7 +2101,7 @@
 
   function proxPasso() {
     const R = T.rascunho;
-    if (!R.voo) return null;
+    if (!R.voo) return T.guia ? ["ESCOLHA DO VOO (SEGMENTO)", "RESERVAR <VOO>"] : null;
     const p = R.paxs[R.ativo];
     if (!p.nome) return ["NOME DO PASSAGEIRO ATIVO P" + (R.ativo + 1), "<NOME COMPLETO>"];
     if (!p.doc) return internacional(R.voo)
@@ -2048,6 +2137,7 @@
 
   function entradaPasso(valor) {
     const R = T.rascunho;
+    if (!R.voo) return execCmd("RESERVAR", valor);
     const p = rPax();
     if (!p.nome) return execCmd("PASSAGEIRO", valor);
     if (!p.doc) return execCmd("DOC", valor);
@@ -2469,6 +2559,14 @@
       }
       case "PESO": return termPeso(arg);
       case "STATUS": case "RASCUNHO": return termStatus();
+      case "*R": return termExibirPnr();
+      case "*I": return termItinerario();
+      case "X2": return termCancelarSegmento();
+      case "ER": return termConfirmar();
+      case ".CE": return termCodificarCidade(arg);
+      case ".CD": return termDecodificar(arg);
+      case ".AE": return termCompanhias();
+      case "SOF": return termSof();
       case "CONFIRMAR": case "EMITIR": return termConfirmar();
       case "CONSULTAR": case "LOCALIZAR": case "PNR": return termConsultar(arg);
       case "CHECKIN": case "CHECK-IN": return termCheckin(arg);

@@ -840,12 +840,14 @@
           </label>
           <label class="blk">FORMA DE PAGAMENTO
             <div class="opts">
-              ${["CARTAO", "PIX", "BOLETO", "BALCAO"].map((p) => {
-                const off = p === "BALCAO" && !mesmoDia(f);
+              ${["CARTAO", "CARTAO DE MILHAS", "PIX", "BOLETO", "BALCAO"].map((p) => {
+                const off = (p === "BALCAO" && !mesmoDia(f)) || (p === "CARTAO DE MILHAS" && (!cartao || !(saldo > 0)));
                 const nome = p === "BALCAO" ? "PAGAR NO BALCAO" : p;
                 const sub = p === "BALCAO"
                   ? (mesmoDia(f) ? "PRESENCIAL NA RETIRADA · SOMENTE VOOS DE HOJE" : "INDISPONIVEL · VOO NAO E DE HOJE")
-                  : p === "CARTAO" ? "DEBITO OU CREDITO" : p === "PIX" ? "APROVACAO IMEDIATA" : "VENCIMENTO EM 1 DIA UTIL";
+                  : p === "CARTAO" ? "DEBITO OU CREDITO"
+                    : p === "CARTAO DE MILHAS" ? (cartao ? "RESGATE DO SALDO: " + fmtMil(saldo) + " MILHAS" : "SEM CARTAO DE MILHAS DO CLIENTE")
+                      : p === "PIX" ? "APROVACAO IMEDIATA" : "VENCIMENTO EM 1 DIA UTIL";
                 return `<button type="button" class="opt${W.pag === p ? " on" : ""}${off ? " off" : ""}" data-p="${p}"${off ? " disabled" : ""}>${nome}<small>${sub}</small></button>`;
               }).join("")}
             </div>
@@ -876,7 +878,11 @@
       alvo.innerHTML = painel("PASSO 4 / 4 — PAGAMENTO", corpo);
       $$(".opt[data-b]", alvo).forEach((b) => b.addEventListener("click", () => { W.bags = Number(b.dataset.b); renderWizard(); }));
       $$(".opt[data-k]", alvo).forEach((b) => b.addEventListener("click", () => { W.peso = Number(b.dataset.k); renderWizard(); }));
-      $$(".opt[data-p]", alvo).forEach((b) => b.addEventListener("click", () => { W.pag = b.dataset.p; renderWizard(); }));
+      $$(".opt[data-p]", alvo).forEach((b) => b.addEventListener("click", () => {
+        W.pag = b.dataset.p;
+        if (W.pag === "CARTAO DE MILHAS") W.milhas = milhasMaxUsar(f.al, bruto);
+        renderWizard();
+      }));
       const mi = $("#wz-milhas", alvo);
       if (mi) mi.addEventListener("change", () => {
         W.milhas = Math.max(0, Number(String(mi.value).replace(/\D/g, "")) || 0);
@@ -1254,7 +1260,7 @@
     "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
-    "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS",
+    "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS", "CARTAO",
     "*R", "*I", "X2", "ER", "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI"];
   const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
     "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
@@ -1285,7 +1291,7 @@
     ["EMAIL", "<ENDERECO> E-MAIL PARA EMISSAO"],
     ["TELEFONE", "<NUMERO> COM DDD"],
     ["CLASSE", "ECON OU EXEC"],
-    ["PAGAMENTO", "CARTAO, PIX, BOLETO OU BALCAO"],
+    ["PAGAMENTO", "CARTAO, CARTAO DE MILHAS, PIX, BOLETO OU BALCAO"],
     ["ASSENTOS", "MAPA DE POLTRONAS DO VOO"],
     ["ASSENTO", "<12A> POLTRONA DO PAX"],
     ["ASSENTOLIVRE", "POLTRONAS LIVRES AUTOMATICAS"],
@@ -1465,7 +1471,7 @@
       " EMAIL <ENDERECO> .... E-MAIL PARA EMISSAO",
       " TELEFONE <NUMERO> ... TELEFONE COM DDD",
       " CLASSE ECON|EXEC .... CLASSE DA PASSAGEM",
-      " PAGAMENTO <FORMA> ... CARTAO, PIX, BOLETO OU BALCAO (VOOS DE HOJE)",
+      " PAGAMENTO <FORMA> ... CARTAO, CARTAO DE MILHAS, PIX, BOLETO OU BALCAO (VOOS DE HOJE)",
       " ASSENTOS ............ MAPA DE POLTRONAS DO VOO ESCOLHIDO",
       " ASSENTO <12A> ....... ESCOLHE A POLTRONA DO PASSAGEIRO ATIVO",
       " ASSENTOLIVRE ........ ESCOLHE ASSENTOS LIVRES PARA QUEM FALTA",
@@ -2330,7 +2336,7 @@
         (max ? "ATE " + fmtMil(max) + " MILHAS = " + taxaTxt(milhasValor(max)) + "  ·  " : "") +
         "SALDO " + fmtMil(milhasSaldo(al)) + " MILHAS  ·  DIGITE 0 PARA NAO USAR"];
     }
-    if (!R.opc.pag) return ["FORMA DE PAGAMENTO", "CARTAO, PIX, BOLETO OU BALCAO" + (cartaoAtivo() ? "" : "   ·   ACUMULE MILHAS: CADASTRAR <NOME>")];
+    if (!R.opc.pag) return ["FORMA DE PAGAMENTO", "CARTAO, CARTAO DE MILHAS, PIX, BOLETO OU BALCAO" + (cartaoAtivo() ? "" : "   ·   ACUMULE MILHAS: CADASTRAR <NOME>")];
     return null;
   }
 
@@ -2543,7 +2549,7 @@
       return;
     }
     if (R.pag === "BALCAO" && !mesmoDia(R.voo)) {
-      termErro(["ERRO: PAGAMENTO NO BALCAO SOMENTE PARA VOOS DE HOJE.", "USE: PAGAMENTO CARTAO | PIX | BOLETO"]);
+      termErro(["ERRO: PAGAMENTO NO BALCAO SOMENTE PARA VOOS DE HOJE.", "USE: PAGAMENTO CARTAO | CARTAO DE MILHAS | PIX | BOLETO"]);
       return;
     }
     if (!podeReservar(R.voo)) {
@@ -2732,7 +2738,7 @@
       case "VALOR": case "PRECO": return termValor();
       case "MILHAS": return termMilhas(arg);
       case "ABATER": return termAbaterMilhas(arg);
-      case "CARTAO": return termCartao(arg);
+      case "CARTAO": if (/MILHAS/.test(String(arg).toUpperCase())) return execCmd("PAGAMENTO", "CARTAO DE MILHAS"); return termCartao(arg);
       case "CADASTRAR": return termCadastrar(arg);
       case "ASSENTOLIVRE": case "SEATLIVRE": case "AUTOSEAT": return termAssentoLivre();
       case "NOVO": case "INICIO": case "ZERAR": return termNovo();
@@ -2762,12 +2768,33 @@
       }
       case "PAGAMENTO": case "PAG": {
         const p = arg.toUpperCase().replace(/\s+/g, "");
-        if (!p) return termPrint(["FORMA ATUAL: " + T.rascunho.pag + "   USE: PAGAMENTO CARTAO | PIX | BOLETO | BALCAO"], "sys");
-        const mapa = { CARTAO: "CARTAO", CREDITO: "CARTAO", DEBITO: "CARTAO", CAR: "CARTAO", PIX: "PIX", BOLETO: "BOLETO", BALCAO: "BALCAO", BALC: "BALCAO" };
+        if (!p) return termPrint(["FORMA ATUAL: " + T.rascunho.pag + "   USE: PAGAMENTO CARTAO | CARTAO DE MILHAS | PIX | BOLETO | BALCAO"], "sys");
+        const mapa = { CARTAO: "CARTAO", CREDITO: "CARTAO", DEBITO: "CARTAO", CAR: "CARTAO", CARTAODEMILHAS: "CARTAO DE MILHAS", CARTAOMILHAS: "CARTAO DE MILHAS", PIX: "PIX", BOLETO: "BOLETO", BALCAO: "BALCAO", BALC: "BALCAO" };
         const v = mapa[p];
-        if (!v) return termErro(["ERRO: FORMA DESCONHECIDA. USE CARTAO, PIX, BOLETO OU BALCAO."]);
+        if (!v) return termErro(["ERRO: FORMA DESCONHECIDA. USE CARTAO, CARTAO DE MILHAS, PIX, BOLETO OU BALCAO."]);
         if (v === "BALCAO" && T.rascunho.voo && !mesmoDia(T.rascunho.voo)) {
           return termErro(["ERRO: PAGAMENTO NO BALCAO SOMENTE PARA VOOS DE HOJE.", "ESCOLHA OUTRA FORMA DE PAGAMENTO."]);
+        }
+        if (v === "CARTAO DE MILHAS") {
+          const c = cartaoAtivo();
+          if (!c) return termErro(semCartaoErro());
+          const al = T.rascunho.voo ? T.rascunho.voo.al : null;
+          if (al && milhasSaldo(al) <= 0) {
+            return termErro(["ERRO: SALDO INSUFICIENTE DE MILHAS NA " + DATA.AIRLINES[al] + " (0 MILHAS).", "USE OUTRA FORMA DE PAGAMENTO OU ADICIONAR MILHAS <E> <N>."]);
+          }
+          T.rascunho.pag = v;
+          T.rascunho.opc.pag = true;
+          if (al) {
+            const max = milhasMaxUsar(al, brutoRascunho(T.rascunho));
+            T.rascunho.milhas = max;
+            T.rascunho.opc.milhas = true;
+            return termPrint([
+              "OK: PAGAMENTO = CARTAO DE MILHAS",
+              "  RESGATE AUTOMATICO: " + fmtMil(max) + " MILHAS = -" + taxaTxt(milhasValor(max)),
+              "  CARTAO " + c.num + " · SALDO " + DATA.AIRLINES[al] + ": " + fmtMil(milhasSaldo(al)) + " MILHAS (DEBITADO NA CONFIRMAR)"
+            ], "sys");
+          }
+          return termPrint(["OK: PAGAMENTO = CARTAO DE MILHAS", "  CARTAO " + c.num + " · RESGATE APLICADO A PASSAGEM"], "sys");
         }
         T.rascunho.pag = v;
         T.rascunho.opc.pag = true;

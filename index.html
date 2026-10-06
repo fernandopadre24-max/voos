@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOOU — Controle de Voos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="crt" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">VOOU</span>
+    <span class="tag">SISTEMA DE CONTROLE DE VOOS</span>
+  </div>
+  <div class="airport">
+    <div class="apt-code">GRU</div>
+    <div class="apt-name">AEROPORTO INTERNACIONAL DE GUARULHOS
+      <span class="sub">TERMINAL 1 · SALA DE EMBARQUE · FIDS v2.4</span>
+    </div>
+  </div>
+  <div class="clockbox">
+    <div class="clock" id="clock">00:00:00</div>
+    <div class="date" id="date">—</div>
+    <div class="leds"><i class="led a"></i><i class="led b"></i><i class="led c"></i></div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab" data-tab="atendimento">ATENDIMENTO</button>
+  <button class="tab on" data-tab="partidas" aria-current="page">PARTIDAS</button>
+  <button class="tab" data-tab="chegadas">CHEGADAS</button>
+  <button class="tab" data-tab="aovivo">AO VIVO</button>
+  <button class="tab" data-tab="reserva">RESERVA</button>
+  <button class="tab" data-tab="bilhetes">BILHETES <span class="badge" id="badge">0</span></button>
+  <button class="tab" data-tab="checkin">CHECK-IN</button>
+  <button class="tab tab-som" id="btnSom">SOM : OFF</button>
+</nav>
+
+<main>
+  <section class="view on" id="view-partidas">
+    <div class="board-head">
+      <h1>PARTIDAS <span>/ DEPARTURES</span></h1>
+      <div class="board-tools">
+        <label class="rota-f"><span>ORIGEM</span><select class="sel rota" id="rota-ori-partidas"></select></label>
+        <label class="rota-f"><span>DESTINO</span><select class="sel rota" id="rota-des-partidas"></select></label>
+        <input class="filtro" id="filtro-partidas" type="text" placeholder="FILTRAR DESTINO, VOO OU COMPANHIA" autocomplete="off">
+        <span class="upd" id="upd-partidas">ATUALIZADO 00:00:00</span>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row head" id="head-partidas"></div>
+        <div id="board-partidas"></div>
+      </div>
+      <div class="vivo-int" role="status" aria-label="Trafego ao vivo">
+        <span class="vb-estado">—</span>
+        <span class="vi-lista"></span>
+      </div>
+    </div>
+    <div class="ticker">
+      <span class="tk-label">AVISOS</span>
+      <div class="tk-track"><div class="tk-content" id="tk1"></div><div class="tk-content" id="tk2"></div></div>
+    </div>
+    <p class="hint">CLIQUE EM UMA LINHA PARA INICIAR A RESERVA</p>
+  </section>
+
+  <section class="view" id="view-chegadas">
+    <div class="board-head">
+      <h1>CHEGADAS <span>/ ARRIVALS</span></h1>
+      <div class="board-tools">
+        <label class="rota-f"><span>ORIGEM</span><select class="sel rota" id="rota-ori-chegadas"></select></label>
+        <label class="rota-f"><span>DESTINO</span><select class="sel rota" id="rota-des-chegadas"></select></label>
+        <input class="filtro" id="filtro-chegadas" type="text" placeholder="FILTRAR ORIGEM, VOO OU COMPANHIA" autocomplete="off">
+        <span class="upd" id="upd-chegadas">ATUALIZADO 00:00:00</span>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row head" id="head-chegadas"></div>
+        <div id="board-chegadas"></div>
+      </div>
+      <div class="vivo-int" role="status" aria-label="Trafego ao vivo">
+        <span class="vb-estado">—</span>
+        <span class="vi-lista"></span>
+      </div>
+    </div>
+    <div class="ticker">
+      <span class="tk-label">AVISOS</span>
+      <div class="tk-track"><div class="tk-content" id="tk3"></div><div class="tk-content" id="tk4"></div></div>
+    </div>
+    <p class="hint">ESTACIONAMENTO P1 LOTADO · DESCOBERTA EM 45 MIN · PROXIMO VOO EM 12 MIN</p>
+  </section>
+
+  <section class="view" id="view-aovivo">
+    <div class="board-head">
+      <h1>TRAFEGO AO VIVO <span>/ LIVE OVER GRU</span></h1>
+      <div class="board-tools">
+        <span class="vivo-estado" id="vivo-estado">CONECTANDO...</span>
+        <span class="upd" id="vivo-upd">ATUALIZADO —</span>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <div class="board vivo-board">
+        <div class="row head vivo-row">
+          <span>VOO</span><span>EMPRESA</span><span>REGISTRO</span><span>ALT</span><span>VEL</span><span>RUMO</span><span>DIST</span><span>SITUACAO</span>
+        </div>
+        <div id="vivo-lista"></div>
+      </div>
+    </div>
+    <p class="hint">POSICOES REAIS DE AERONAVES VIA ADS-B (REDE DE VOLUNTARIOS) · ATUALIZA A CADA 20 S · SNAPSHOT LOCAL SEM CONEXAO</p>
+  </section>
+
+  <section class="view" id="view-reserva">
+    <div class="vivo-int" role="status" aria-label="Trafego ao vivo">
+      <span class="vb-estado">—</span>
+      <span class="vi-lista"></span>
+    </div>
+    <div id="wizard"></div>
+  </section>
+
+  <section class="view" id="view-bilhetes">
+    <div class="board-head">
+      <h1>MINHAS RESERVAS <span>/ TICKETS</span></h1>
+    </div>
+    <div id="lista-bilhetes"></div>
+  </section>
+
+  <section class="view" id="view-checkin">
+    <div class="board-head">
+      <h1>CHECK-IN <span>/ SELF SERVICE</span></h1>
+    </div>
+    <div class="panel ci-panel">
+      <div class="panel-title">LOCALIZAR RESERVA</div>
+      <div class="panel-body">
+        <p class="ci-txt">INFORME O CÓDIGO DE RESERVA (PNR) RECEBIDO NO MOMENTO DA COMPRA.</p>
+        <form id="form-checkin" class="ci-form" autocomplete="off">
+          <input id="ci-pnr" class="in" type="text" maxlength="6" placeholder="EX.: K7XM2">
+          <button class="btn" type="submit">LOCALIZAR</button>
+        </form>
+        <div id="ci-msg" class="ci-msg"></div>
+      </div>
+    </div>
+    <div id="ci-result"></div>
+  </section>
+
+  <section class="view" id="view-atendimento">
+    <div class="board-head">
+      <h1>ATENDIMENTO <span>/ BALCAO DAS EMPRESAS</span></h1>
+      <div class="board-tools">
+        <span class="upd">TERMINAL REMOTO · DIGITE AJUDA</span>
+      </div>
+    </div>
+    <div class="term" id="term">
+      <div class="term-screen" id="term-out"></div>
+      <div class="term-line">
+        <span class="term-prompt">Read&gt;</span>
+        <span class="term-echo" id="term-echo"></span><span class="cur"></span>
+        <input id="term-in" class="term-capture" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Linha de comando do atendimento">
+      </div>
+    </div>
+    <p class="hint">EXEMPLOS: VOOS · VOOS MAD · ROTA GRU MAD · RES SSA FOR · TO SSA FROM GRU · DE GRU PARA SSA · DATA AMANHA · SITUACAO LA3375 · AOVIVO · RESERVAR 11 (VOO PROGRAMADO) · CADASTRAR JOAO SILVA · CARTAO VM-1234567890 · VALOR · ADICIONAR MILHAS LA 1500 · ABATER MILHAS 300 · LISTAR MILHAS · NOVO · AJUDA</p>
+  </section>
+</main>
+
+<div class="vivo-bar" id="vivo-bar" role="status" aria-label="Trafego ao vivo sobre o aeroporto">
+  <span class="vb-estado" id="vivo-bar-estado">—</span>
+  <span class="vb-track"><span class="vb-slide" id="vivo-bar-slide"></span></span>
+</div>
+
+<div id="print-area"></div>
+
+<footer>
+  <span>VOOU TURISMO E TRANSPORTES S/A · SISTEMA FIDS 2.4 · TERMINAL 1</span>
+  <span>ROTAS DE DEMONSTRAÇÃO BASEADAS EM VOOS REAIS · NÃO É UM SISTEMA OPERACIONAL REAL</span>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/board.js"></script>
+<script src="js/live.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

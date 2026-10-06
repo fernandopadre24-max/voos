@@ -557,6 +557,12 @@ body:has(#view-reserva.on){padding-bottom:64px}
   font-size:16px;padding:0;margin:0;cursor:text;
 }
 .term-line b{color:#d6ffe6}
+#term.pausado .term-line::after{
+  content:"▌ PAUSA · BARRA DE ESPACO CONTINUA ▌";
+  position:absolute;right:0;top:9px;
+  color:var(--amber);font-weight:bold;letter-spacing:.05em;
+  animation:curblink 1s steps(2) infinite;
+}
 body:has(#view-atendimento.on){padding-bottom:0}
 body:has(#view-atendimento.on) footer{display:none}
 #view-atendimento .board-head{margin-bottom:8px}

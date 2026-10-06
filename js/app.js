@@ -1222,7 +1222,7 @@
   }
 
   const T = {
-    boot: false, imprimindo: false, fila: [], hist: [], hi: 0, iv: null,
+    boot: false, imprimindo: false, fila: [], hist: [], hi: 0, iv: null, pausado: false,
     rascunho: novoRascunho(), rota: null, dia: 0, guia: false, cartao: null
   };
   const COMANDOS = ["AJUDA", "VOOS", "CHEGADAS", "ROTA", "RES", "TO", "DATA", "SITUACAO", "TARIFA", "VALOR", "MILHAS",
@@ -1350,6 +1350,7 @@
     const txt = item.t;
     let i = 0;
     T.iv = setInterval(() => {
+      if (T.pausado) return;
       i += 3;
       el.textContent = txt.slice(0, i);
       if (i >= txt.length) {
@@ -1382,7 +1383,19 @@
     if (last < txt.length) el.appendChild(document.createTextNode(txt.slice(last)));
   }
 
+  function alternarPausa() {
+    T.pausado = !T.pausado;
+    termPausaUI();
+  }
+
+  function termPausaUI() {
+    const c = $("#term");
+    if (c) c.classList.toggle("pausado", !!T.pausado);
+  }
+
   function termCtrlC() {
+    T.pausado = false;
+    termPausaUI();
     const parcial = T.imprimindo ? termEl().lastElementChild : null;
     T.fila = [];
     if (T.iv) { clearInterval(T.iv); T.iv = null; }
@@ -2767,7 +2780,7 @@
       case "CHECKIN": case "CHECK-IN": return termCheckin(arg);
       case "CANCELAR": return termCancelar(arg);
       case "BILHETES": case "RESERVAS": return termBilhetes();
-      case "LIMPAR": case "CLEAR": termEl().textContent = ""; T.fila = []; T.imprimindo = false; if (T.iv) { clearInterval(T.iv); T.iv = null; } return;
+      case "LIMPAR": case "CLEAR": T.pausado = false; termPausaUI(); termEl().textContent = ""; T.fila = []; T.imprimindo = false; if (T.iv) { clearInterval(T.iv); T.iv = null; } return;
       default: return termErro(["COMANDO DESCONHECIDO: " + C + " - DIGITE AJUDA PARA VER A LISTA."]);
     }
   }
@@ -2811,6 +2824,9 @@
         const v = inp.value.toUpperCase().replace(/\s+/g, "");
         const m = v ? COMANDOS.find((c) => c.indexOf(v) === 0) : null;
         if (m) { inp.value = m + " "; eco(); }
+      } else if (e.key === " " && !inp.value) {
+        e.preventDefault();
+        alternarPausa();
       }
     });
     $("#term").addEventListener("click", () => inp.focus());

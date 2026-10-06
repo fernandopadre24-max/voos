@@ -537,6 +537,9 @@ body:has(#view-reserva.on){padding-bottom:64px}
 .to-line.sys{color:#a9ffcb}
 .to-line.bad{color:#ff6a58;text-shadow:0 0 6px rgba(255,106,88,.4)}
 .to-line.hl{color:#d6ffe6;font-weight:bold}
+.ts-bad{color:var(--red)}
+.ts-org{color:var(--amber)}
+.ts-deep{color:var(--green-dark)}
 .term-line{
   position:relative;display:flex;align-items:center;gap:9px;margin-top:8px;
   border-top:1px solid #123312;padding-top:9px;

@@ -1353,6 +1353,7 @@
       i += 3;
       el.textContent = txt.slice(0, i);
       if (i >= txt.length) {
+        pintarStatus(el, txt);
         clearInterval(T.iv);
         T.iv = null;
         T.imprimindo = false;
@@ -1362,6 +1363,23 @@
         termRolar();
       }
     }, 14);
+  }
+
+  function pintarStatus(el, txt) {
+    if (txt.indexOf("CANCELADO") < 0 && txt.indexOf("ULTIMO CHAMADO") < 0 && txt.indexOf("PARTIU") < 0) return;
+    const re = /(CANCELADO|ULTIMO CHAMADO|PARTIU)/g;
+    el.textContent = "";
+    let last = 0;
+    let m;
+    while ((m = re.exec(txt))) {
+      if (m.index > last) el.appendChild(document.createTextNode(txt.slice(last, m.index)));
+      const sp = document.createElement("span");
+      sp.className = "ts-" + classeStat(m[0]);
+      sp.textContent = m[0];
+      el.appendChild(sp);
+      last = m.index + m[0].length;
+    }
+    if (last < txt.length) el.appendChild(document.createTextNode(txt.slice(last)));
   }
 
   function termCtrlC() {

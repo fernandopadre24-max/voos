@@ -404,6 +404,27 @@
     return T.cartao ? cartoesLer()[T.cartao] || null : null;
   }
 
+  function normNome(s) { return String(s || "").replace(/\s+/g, " ").trim().toUpperCase(); }
+
+  function ligarCartaoCliente(nome) {
+    const n = normNome(nome);
+    if (n.length < 6 || n.indexOf(" ") < 0) return null;
+    const cs = cartoesLer();
+    const chave = Object.keys(cs).find((k) => normNome(cs[k].nome) === n);
+    if (chave) { T.cartao = chave; return { card: cs[chave], novo: false }; }
+    const num = gerarCartao();
+    cs[normCartao(num)] = { num: num, nome: n, criado: Date.now(), saldo: {} };
+    cartoesSalvar(cs);
+    T.cartao = normCartao(num);
+    return { card: cs[T.cartao], novo: true };
+  }
+
+  function linhaCartaoLigado(nome) {
+    const l = ligarCartaoCliente(nome);
+    if (!l) return null;
+    return "CARTAO DE MILHAS " + (l.novo ? "EMITIDO E LIGADO: " : "LIGADO AO CLIENTE: ") + l.card.num + " · " + l.card.nome;
+  }
+
   function gerarCartao() {
     const cs = cartoesLer();
     let num = "";
@@ -1434,7 +1455,7 @@
       " AOVIVO .............. TRAFEGO AO VIVO DE VERDADE PROXIMO AO GRU",
       " TARIFA <ORI> <DES> .. TARIFA, DISTANCIA E DURACAO DA ROTA",
       " VALOR ............... COMPOSICAO DO VALOR DA RESERVA",
-      " RESERVAR <VOO> ...... SELECIONA O VOO (APENAS SITUACAO PROGRAMADO). EX.: RESERVAR 3",
+      " RESERVAR <VOO> ...... SELECIONA O VOO E LIGA O NOME DO CLIENTE AO CARTAO DE MILHAS (APENAS PROGRAMADO). EX.: RESERVAR 3",
       " PASSAGEIRO <NOME> ... NOME COMPLETO DO PASSAGEIRO ATIVO (P1)",
       " ADICIONAR <NOME> .... INCLUI OUTRO PASSAGEIRO NA RESERVA",
       " PASSAGEIROS ......... LISTA OS PASSAGEIROS DA RESERVA",
@@ -2275,13 +2296,15 @@
     T.rascunho.paxs.forEach((p) => {
       if (p.assento && (!assentoValido(f, p.assento) || ocVoo.has(p.assento))) p.assento = null;
     });
+    const lig = T.rascunho.paxs[0].nome ? linhaCartaoLigado(T.rascunho.paxs[0].nome) : null;
     termPrint([
       "VOO SELECIONADO: " + f.no.replace(/\s/g, ""),
       "  ROTA: " + rotaVoo(f) + "   " + f.cidade,
       "  ESCALA: " + escalaTxt(f),
       "  PARTIDA: " + hhmm(f.ref) + "   DURACAO: " + durTxt(f.dur) + "   AERONAVE: " + f.ac,
       "  PORTAO: " + (f.cancelado ? "--" : gateDe(f)) + "   SITUACAO: " + statusDe(f),
-      "  TARIFA " + (T.rascunho.classe === "EXEC" ? "EXECUTIVA" : "ECONOMICA") + ": " + brl(precoTotal(f, T.rascunho.classe, T.rascunho.bags))
+      "  TARIFA " + (T.rascunho.classe === "EXEC" ? "EXECUTIVA" : "ECONOMICA") + ": " + brl(precoTotal(f, T.rascunho.classe, T.rascunho.bags)),
+      ...(lig ? ["  " + lig] : [])
     ], "sys");
   }
 
@@ -2362,7 +2385,12 @@
         return;
       }
       p[chave] = valor.trim();
-      termPrint(["OK: P" + (T.rascunho.ativo + 1) + " " + (intl ? "PASSAPORTE" : chave.toUpperCase()) + " = " + valor.trim().toUpperCase()], "sys");
+      const ok = ["OK: P" + (T.rascunho.ativo + 1) + " " + (intl ? "PASSAPORTE" : chave.toUpperCase()) + " = " + valor.trim().toUpperCase()];
+      if (chave === "nome" && T.rascunho.ativo === 0) {
+        const lig = linhaCartaoLigado(p.nome);
+        if (lig) ok.push("  " + lig);
+      }
+      termPrint(ok, "sys");
       return;
     }
     T.rascunho[chave === "email" ? "email" : "tel"] = valor.trim();

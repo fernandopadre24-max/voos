@@ -155,12 +155,19 @@
         <span class="upd">TERMINAL REMOTO · DIGITE AJUDA</span>
       </div>
     </div>
-    <div class="term" id="term">
-      <div class="term-screen" id="term-out"></div>
-      <div class="term-line">
-        <span class="term-prompt">Read&gt;</span>
-        <span class="term-echo" id="term-echo"></span><span class="cur"></span>
-        <input id="term-in" class="term-capture" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Linha de comando do atendimento">
+    <div class="term-cols">
+      <aside class="term-cmds" id="term-cmds" aria-label="Lista de comandos do terminal">
+        <div class="tc-head">COMANDOS</div>
+        <div class="tc-list" id="tc-list"></div>
+        <div class="tc-foot">TAB COMPLETA · SETA CIMA REPETE<br>CTRL+C INTERROMPE</div>
+      </aside>
+      <div class="term" id="term">
+        <div class="term-screen" id="term-out"></div>
+        <div class="term-line">
+          <span class="term-prompt">Read&gt;</span>
+          <span class="term-echo" id="term-echo"></span><span class="cur"></span>
+          <input id="term-in" class="term-capture" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Linha de comando do atendimento">
+        </div>
       </div>
     </div>
     <p class="hint">EXEMPLOS: VOOS · VOOS MAD · ROTA GRU MAD · RES SSA FOR · TO SSA FROM GRU · DE GRU PARA SSA · DATA AMANHA · SITUACAO LA3375 · AOVIVO · RESERVAR 11 (VOO PROGRAMADO) · CADASTRAR JOAO SILVA · CARTAO VM-1234567890 · VALOR · ADICIONAR MILHAS LA 1500 · ABATER MILHAS 300 · LISTAR MILHAS · NOVO · AJUDA</p>

@@ -1233,6 +1233,67 @@
     "FONE", "PAG", "MAPA", "POLTRONA", "MALOTAS", "BAGAGEM", "RASCUNHO", "EMITIR", "LOCALIZAR", "PNR",
     "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT"]));
   const PAG_VALORES = ["CARTAO", "CREDITO", "DEBITO", "CAR", "PIX", "BOLETO", "BALCAO", "BALC"];
+  const TERM_CMDS = [
+    ["VOOS", "[FILTRO] LISTA DE PARTIDAS"],
+    ["CHEGADAS", "[FILTRO] LISTA DE CHEGADAS"],
+    ["ROTA", "<ORI> <DES> ROTA DO ATENDIMENTO"],
+    ["RES", "<ORI> <DES> ESCOLHE O PAR"],
+    ["TO", "<DES> FROM <ORI>"],
+    ["DE", "<ORI> PARA <DES>"],
+    ["DATA", "<DIA> DE 0 A 6"],
+    ["SITUACAO", "<VOO> SITUACAO EM TEMPO REAL"],
+    ["AOVIVO", "TRAFEGO AO VIVO DO GRU"],
+    ["TARIFA", "<ORI> <DES> TARIFA E DISTANCIA"],
+    ["VALOR", "COMPOSICAO DO VALOR DA RESERVA"],
+    ["RESERVAR", "<VOO> SELECIONA O VOO"],
+    ["PASSAGEIRO", "<NOME> NOME DO PAX ATIVO"],
+    ["ADICIONAR", "<NOME> INCLUI PASSAGEIRO"],
+    ["PASSAGEIROS", "LISTA OS PASSAGEIROS"],
+    ["ATIVO", "<N> TROCA O PASSAGEIRO ATIVO"],
+    ["REMOVER", "<N> REMOVE O PASSAGEIRO"],
+    ["DOC", "<NUMERO> CPF OU PASSAPORTE"],
+    ["EMAIL", "<ENDERECO> E-MAIL PARA EMISSAO"],
+    ["TELEFONE", "<NUMERO> COM DDD"],
+    ["CLASSE", "ECON OU EXEC"],
+    ["PAGAMENTO", "CARTAO, PIX, BOLETO OU BALCAO"],
+    ["ASSENTOS", "MAPA DE POLTRONAS DO VOO"],
+    ["ASSENTO", "<12A> POLTRONA DO PAX"],
+    ["ASSENTOLIVRE", "POLTRONAS LIVRES AUTOMATICAS"],
+    ["MALOTA", "<0|1|2> EQUIPAGEM DESPACHADA"],
+    ["PESO", "<KG> BAGAGEM DO PAX"],
+    ["MILHAS", "[N] SALDO E RESGATE"],
+    ["CADASTRAR", "<NOME> NOVO CLIENTE E CARTAO"],
+    ["CARTAO", "[NUM] ATIVA O CARTAO DE MILHAS"],
+    ["LISTAR MILHAS", "SALDO DE MILHAS POR EMPRESA"],
+    ["ADICIONAR MILHAS", "<E> <N> CREDITA MILHAS"],
+    ["ABATER MILHAS", "[NA PASSAGEM] <N> USA MILHAS"],
+    ["STATUS", "MOSTRA O RASCUNHO ATUAL"],
+    ["CONFIRMAR", "EMITE A RESERVA E O PNR"],
+    ["CONSULTAR", "<PNR> DADOS DE UMA RESERVA"],
+    ["CHECKIN", "<PNR> FAZ O CHECK-IN"],
+    ["CANCELAR", "<PNR> CANCELA A RESERVA"],
+    ["BILHETES", "LISTA AS SUAS RESERVAS"],
+    ["NOVO", "NOVO ATENDIMENTO (DESCARTA O RASCUNHO)"],
+    ["SOM", "ON OU OFF"],
+    ["LIMPAR", "LIMPA A TELA"],
+    ["AJUDA", "LISTA COMPLETA NO TERMINAL"]
+  ];
+
+  function montarTermCmds() {
+    const l = $("#tc-list");
+    if (!l) return;
+    l.innerHTML = TERM_CMDS.map((c) =>
+      '<button type="button" class="tc-item" data-i="' + c[0] + '"><b>' + c[0] + "</b><span>" + c[1] + "</span></button>"
+    ).join("");
+    l.addEventListener("click", (e) => {
+      const b = e.target.closest(".tc-item");
+      if (!b) return;
+      const inp = $("#term-in");
+      inp.value = b.dataset.i + " ";
+      inp.dispatchEvent(new Event("input"));
+      inp.focus();
+    });
+  }
 
   function rPax() {
     const R = T.rascunho;
@@ -2515,6 +2576,7 @@
     $("#lista-bilhetes").addEventListener("click", clicarBilhetes);
 
     initTerminal();
+    montarTermCmds();
 
     const barraVivo = $("#vivo-bar");
     if (barraVivo) barraVivo.addEventListener("click", () => irPara("aovivo"));

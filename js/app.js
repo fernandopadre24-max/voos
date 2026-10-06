@@ -1214,7 +1214,7 @@
 
   // ---------- terminal de atendimento ----------
   function novoRascunho() {
-    return { voo: null, paxs: [{ nome: "", doc: "", assento: null, peso: 0 }], ativo: 0, email: "", tel: "", classe: "ECON", bags: 0, pag: "CARTAO", milhas: 0, opc: { classe: false, malota: false, peso: false, pag: false, milhas: false } };
+    return { voo: null, paxs: [{ nome: "", doc: "", assento: null, peso: 0 }], ativo: 0, email: "", tel: "", rf: "", tk: "", classe: "ECON", bags: 0, pag: "CARTAO", milhas: 0, opc: { classe: false, malota: false, peso: false, pag: false, milhas: false } };
   }
 
   const T = {
@@ -1225,16 +1225,19 @@
     "LISTAR", "ABATER", "CARTAO", "CADASTRAR", "RESERVAR", "PASSAGEIRO", "PASSAGEIROS", "ADICIONAR", "REMOVER", "ATIVO",
     "DOC", "EMAIL", "TELEFONE", "CLASSE", "PAGAMENTO", "ASSENTOS", "ASSENTO", "ASSENTOLIVRE", "MALOTA", "PESO",
     "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
-    "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF"];
+    "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF",
+    "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
     "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS",
-    "*R", "*I", "X2", "ER"];
+    "*R", "*I", "X2", "ER", "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI"];
   const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
     "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
     "FONE", "PAG", "MAPA", "POLTRONA", "MALOTAS", "BAGAGEM", "RASCUNHO", "EMITIR", "LOCALIZAR", "PNR",
     "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT"]));
   const PAG_VALORES = ["CARTAO", "CREDITO", "DEBITO", "CAR", "PIX", "BOLETO", "BALCAO", "BALC"];
+  const MESES_AM = { JAN: 0, FEV: 1, FEB: 1, MAR: 2, ABR: 3, APR: 3, MAI: 4, MAY: 4, JUN: 5, JUL: 6,
+    AGO: 7, AUG: 7, SET: 8, SEP: 8, OUT: 9, OCT: 9, NOV: 10, DEZ: 11, DEC: 11 };
   const TERM_CMDS = [
     ["VOOS", "[FILTRO] LISTA DE PARTIDAS"],
     ["CHEGADAS", "[FILTRO] LISTA DE CHEGADAS"],
@@ -1286,6 +1289,15 @@
     [".CD", "<AEROPORTO> DECODIFICA (EX.: .CD SSA)"],
     [".AE", "LISTA AS COMPANHIAS AEREAS"],
     ["SOF", "ENCERRA A SESSAO DO TERMINAL"],
+    ["AN", "<DATA><ORI><DES> DISPONIBILIDADE (EX.: AN06OCTSAOFOR)"],
+    ["NM", "<N>SOBRENOME/NOME DO PAX (EX.: NM1SILVA/JOAO MR)"],
+    ["AP", "<FONE> TELEFONE (AP E-<EMAIL> GRAVA O E-MAIL)"],
+    ["RF", "<NOME> QUEM SOLICITOU A RESERVA"],
+    ["TKTL", "<DD><MES> PRAZO DE EMISSAO (EX.: TKTL06OCT)"],
+    ["SS", "<1><CLASSE> VENDA DO ASSENTO (EX.: SS1Y1)"],
+    ["RT", "[/PNR] EXIBE O PNR ATUAL"],
+    ["XE", "<N> CANCELA O SEGMENTO (EX.: XE1)"],
+    ["XI", "CANCELA O ITINERARIO TODO"],
     ["AJUDA", "LISTA COMPLETA NO TERMINAL"]
   ];
 
@@ -1426,6 +1438,15 @@
       " .CD <AEROPORTO> ..... DECODIFICA AEROPORTO (EX.: .CD SSA)",
       " .AE ................. LISTA AS COMPANHIAS AEREAS",
       " SOF ................. ENCERRA A SESSAO DO TERMINAL",
+      " AN<DATA><ORI><DES> .. DISPONIBILIDADE DE VOOS (EX.: AN06OCTSAOFOR)",
+      " NM1SOBRENOME/NOME ... NOME DO PASSAGEIRO (EX.: NM1SILVA/JOAO MR)",
+      " AP <FONE> ........... TELEFONE (AP E-<EMAIL> GRAVA O E-MAIL)",
+      " RF <NOME> ........... REGISTRA QUEM SOLICITOU A RESERVA",
+      " TKTL<DD><MES> ....... PRAZO DE EMISSAO (EX.: TKTL06OCT)",
+      " SS<1><CLASSE> ....... VENDA DO ASSENTO (EX.: SS1Y1)",
+      " RT [/PNR] ........... EXIBE O PNR ATUAL OU RECUPERA POR PNR",
+      " XE<N> ............... CANCELA O SEGMENTO (EX.: XE1)",
+      " XI .................. CANCELA O ITINERARIO TODO",
       "------------------------------------------------",
       "APOS O RESERVAR O TERMINAL AVANCA O PROXIMO PASSO SOZINHO",
       "TAB COMPLETA O COMANDO   SETA CIMA REPETE O ULTIMO",
@@ -2006,6 +2027,131 @@
     termPrint(l, "sys");
   }
 
+  function termAn(arg) {
+    const a = String(arg).toUpperCase().replace(/\s+/g, "");
+    const m = a.match(/^(\d{2})([A-Z]{3})([A-Z]{3})([A-Z]{3})(?:\/([A-Z0-9]+))?$/);
+    if (!m) return termErro([
+      "ERRO: USE AN <DIA><MES><ORIGEM><DESTINO>. EX.: AN06OCTSAOFOR",
+      "CIDADES: SAO, RIO OU SIGLAS DE AEROPORTO (GRU, FOR, SSA).",
+      "FILTRO: /AM, /PM OU /HHMM (EX.: AN06OCTSAOFOR/AM)."
+    ]);
+    const cid = { SAO: "GRU", RIO: "GIG", SP: "GRU", RJ: "GIG" };
+    const resol = (c) => cid[c] || (DATA.AEROS[c] ? c : null);
+    const o = resol(m[3]), d = resol(m[4]);
+    if (!o || !d) return termErro(["ERRO: ORIGEM/DESTINO DESCONHECIDO: " + (o ? m[4] : m[3]), "USE 3 LETRAS. EX.: AN06OCTSAOFOR OU AN06OCTGRUSSA."]);
+    if (o === d) return termErro(["ERRO: ORIGEM E DESTINO IGUAIS."]);
+    const mi = MESES_AM[m[2]];
+    if (mi === undefined) return termErro(["ERRO: MES INVALIDO: " + m[2] + ". USE SIGLA DE 3 LETRAS. EX.: OUT OU OCT."]);
+    const hoje = new Date();
+    const alvo = new Date(hoje.getFullYear(), mi, Number(m[1]));
+    if (alvo.getDate() !== Number(m[1])) return termErro(["ERRO: DATA INVALIDA: " + m[1] + m[2] + "."]);
+    const delta = Math.round((new Date(alvo.getFullYear(), alvo.getMonth(), alvo.getDate()) -
+      new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())) / 86400000);
+    if (delta < 0) return termErro(["ERRO: DATA " + m[1] + m[2] + " JA PASSOU. HOJE E " + DATA.dataLonga(0) + " " + DATA.dataSemana(0) + "."]);
+    let lista = DATA.gerarVoos("partidas", o, d, delta);
+    const filtro = m[5] || "";
+    let ftxt = "";
+    if (filtro === "AM") { lista = lista.filter((f) => hhmm(f.ref) < "12:00"); ftxt = "   FILTRO /AM (MANHA)"; }
+    else if (filtro === "PM") { lista = lista.filter((f) => hhmm(f.ref) >= "12:00"); ftxt = "   FILTRO /PM (TARDE/NOITE)"; }
+    else if (filtro === "ADL" || filtro === "ALL") { ftxt = "   FILTRO /" + filtro + " (DIA INTEIRO)"; }
+    else if (/^\d{4}$/.test(filtro)) {
+      const h = filtro.slice(0, 2) + ":" + filtro.slice(2);
+      lista = lista.filter((f) => hhmm(f.ref) >= h);
+      ftxt = "   FILTRO /" + filtro + " (A PARTIR DE " + h + ")";
+    } else if (filtro) {
+      return termErro(["ERRO: FILTRO /" + filtro + " NAO SUPORTADO.", "USE /AM, /PM OU /HHMM. EX.: AN" + m[1] + m[2] + m[3] + m[4] + "/AM."]);
+    }
+    T.dia = delta;
+    T.rota = { origem: o, destino: d };
+    const cab = "DISPONIBILIDADE - " + m[1] + m[2] + "   " + o + " > " + d + "   " +
+      (delta ? DATA.dataLonga(delta) + " " + DATA.dataSemana(delta) : "HOJE " + dataHoje()) + ftxt;
+    if (!lista.length) return termPrint([cab, "NENHUM VOO DISPONIVEL NESTA DATA/FILTRO."], "sys");
+    const l = linhasVoos(cab, lista);
+    l.push("USE: RESERVAR <VOO> OU RESERVAR <NUMERO DA LINHA>");
+    const av = avisoRotaAtual();
+    if (av) l.push(av);
+    termPrint(l, "sys");
+  }
+
+  function termNomeGds(arg) {
+    const m = String(arg).trim().match(/^(\d+)\s*(.+)$/);
+    if (!m) return termErro(["ERRO: USE NM1SOBRENOME/NOME. EX.: NM1SILVA/JOAO MR"]);
+    const idx = Number(m[1]);
+    if (idx < 1 || idx > MAX_PAX) return termErro(["ERRO: NUMERO DE PASSAGEIRO INVALIDO (1 A " + MAX_PAX + ")."]);
+    const R = T.rascunho;
+    while (R.paxs.length < idx) R.paxs.push({ nome: "", doc: "", assento: null, peso: 0 });
+    R.ativo = idx - 1;
+    const esp = m[2].trim().replace(/\s+/g, " ");
+    const limpa = (s) => s.replace(/\s+(MR|MRS|MS|DR|SR|MISS)\s*$/i, "").trim();
+    let nome;
+    if (esp.indexOf("/") >= 0) {
+      const p2 = esp.split("/");
+      nome = limpa(p2[1] || "") + " " + limpa(p2[0] || "");
+    } else {
+      nome = limpa(esp);
+    }
+    termCampo("nome", nome.replace(/\s+/g, " ").trim().toUpperCase());
+  }
+
+  function termRecebidoPor(arg) {
+    const v = String(arg).trim();
+    if (!v) return termPrint(["RF ATUAL: " + (T.rascunho.rf || "---"), "USE RF <NOME> PARA REGISTRAR QUEM SOLICITOU."], "sys");
+    T.rascunho.rf = v.toUpperCase();
+    termPrint(["OK: RF = " + T.rascunho.rf + " (RECEBIDO POR)"], "sys");
+  }
+
+  function termTktl(arg) {
+    const v = String(arg).toUpperCase().replace(/\s+/g, "");
+    const m = v.match(/^(\d{2})([A-Z]{3})$/);
+    if (!m) return termErro(["ERRO: USE TKTL<DD><MES>. EX.: TKTL06OCT"]);
+    if (MESES_AM[m[2]] === undefined) return termErro(["ERRO: MES INVALIDO: " + m[2] + ". USE SIGLA DE 3 LETRAS. EX.: TKTL06OCT."]);
+    const n = Number(m[1]);
+    const hoje = new Date();
+    const alvo = new Date(hoje.getFullYear(), MESES_AM[m[2]], n);
+    if (n < 1 || n > 31 || alvo.getDate() !== n) return termErro(["ERRO: DIA INVALIDO: " + m[1] + ". EX.: TKTL06OCT."]);
+    T.rascunho.tk = m[1] + m[2];
+    termPrint(["OK: TKTL = " + T.rascunho.tk + " - PRAZO DE EMISSAO REGISTRADO."], "sys");
+  }
+
+  function termSell(arg) {
+    const v = String(arg).toUpperCase().replace(/\s+/g, "");
+    const m = v.match(/^(\d+)([A-Z])(\d*)$/);
+    if (!m) return termErro(["ERRO: USE SS<QTDADE><CLASSE><SEGMENTO>. EX.: SS1Y1", "CLASSES: Y (ECONOMICA), J OU F (EXECUTIVA)."]);
+    const qtd = Number(m[1]);
+    const seg = m[3] ? Number(m[3]) : 1;
+    if (!qtd) return termErro(["ERRO: QUANTIDADE INVALIDA. EX.: SS1Y1"]);
+    if (seg !== 1) return termErro(["ERRO: SEGMENTO " + seg + " NAO EXISTE. HA 1 SEGMENTO ATIVO NO PNR."]);
+    const R = T.rascunho;
+    if (!R.voo) return termErro(["ERRO: NAO HA SEGMENTO ATIVO PARA VENDER.", "USE RESERVAR <VOO> PRIMEIRO."]);
+    let classe = null;
+    if ("YEWKMHLQSRG".indexOf(m[2]) >= 0) classe = "ECON";
+    else if ("JCDFP".indexOf(m[2]) >= 0) classe = "EXEC";
+    if (!classe) return termErro(["ERRO: CLASSE '" + m[2] + "' NAO RECONHECIDA. USE Y (ECON) OU J/F (EXEC)."]);
+    R.classe = classe;
+    R.opc.classe = true;
+    termPrint([
+      "OK: " + qtd + " LUGAR NA CLASSE " + (classe === "EXEC" ? "EXECUTIVA" : "ECONOMICA") + " SOLICITADO NO SEGMENTO 1",
+      "  VOO: " + R.voo.no.replace(/\s/g, "") + "   TARIFA: " + brl(precoTotal(R.voo, classe, R.bags))
+    ], "sys");
+  }
+
+  function termXe(arg) {
+    const n = Number(String(arg).replace(/\D/g, ""));
+    const R = T.rascunho;
+    if (!R.voo) return termErro(["ERRO: NAO HA SEGMENTO ATIVO PARA CANCELAR.", "USE RESERVAR <VOO>."]);
+    if (!n || n === 1) return termCancelarSegmento();
+    return termErro(["ERRO: SEGMENTO " + n + " NAO EXISTE. HA 1 SEGMENTO ATIVO (XE1)."]);
+  }
+
+  function termXi() {
+    const R = T.rascunho;
+    const tinha = !!R.voo || R.paxs.some((p) => p.nome || p.doc);
+    if (!tinha) return termErro(["ERRO: NAO HA ITINERARIO PARA CANCELAR."]);
+    T.guia = false;
+    T.rascunho = novoRascunho();
+    termPrint(["OK: ITINERARIO CANCELADO - PNR DESCARTADO.", "PROXIMO PASSO: VOOS  OU  RESERVAR <VOO>"], "sys");
+  }
+
   function termSof() {
     const tinha = !!T.rascunho.voo || T.rascunho.paxs.some((p) => p.nome);
     T.guia = false;
@@ -2031,13 +2177,9 @@
     termPrint(["SOM DO TABULEIRO: " + (ligado ? "ON" : "OFF")], "sys");
   }
 
-  function termVoos(arg) {
-    const base = termLista();
-    if (!base) return termErro(["ERRO: ROTA NAO DEFINIDA PARA ESTA DATA.", "USE: ROTA <ORIGEM> <DESTINO>  EX.: ROTA GRU GIG", "DEPOIS: DATA AMANHA  E  VOOS"]);
-    const lista = termFiltrar(base, arg);
-    if (!lista.length) return termPrint(["NENHUM VOO ENCONTRADO PARA '" + arg.trim().toUpperCase() + "'."], "sys");
+  function linhasVoos(titulo, lista) {
     const l = [
-      "VOOS DE PARTIDA - " + termTitulo("partidas"),
+      titulo,
       pad("N", 4) + pad("VOO", 8) + pad("COMPANHIA", 12) + pad("DESTINO", 18) + pad("HORA", 7) + pad("PORT", 6) + "SITUACAO",
       "----------------------------------------------------------------------"
     ];
@@ -2045,6 +2187,15 @@
       l.push(pad(i + 1, 4) + pad(f.no.replace(/\s/g, ""), 8) + pad(DATA.AIRLINES[f.al] || f.al, 12) + pad(celDestino(f, 18), 18) +
         pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + statusDe(f));
     });
+    return l;
+  }
+
+  function termVoos(arg) {
+    const base = termLista();
+    if (!base) return termErro(["ERRO: ROTA NAO DEFINIDA PARA ESTA DATA.", "USE: ROTA <ORIGEM> <DESTINO>  EX.: ROTA GRU GIG", "DEPOIS: DATA AMANHA  E  VOOS"]);
+    const lista = termFiltrar(base, arg);
+    if (!lista.length) return termPrint(["NENHUM VOO ENCONTRADO PARA '" + arg.trim().toUpperCase() + "'."], "sys");
+    const l = linhasVoos("VOOS DE PARTIDA - " + termTitulo("partidas"), lista);
     l.push("USE: RESERVAR <VOO> OU RESERVAR <NUMERO DA LINHA>");
     termPrint(l);
   }
@@ -2304,6 +2455,7 @@
         "   DATA ALVO: " + (T.dia ? DATA.dataLonga(T.dia) + " " + DATA.dataSemana(T.dia) : "HOJE"),
       "  VOO: " + (R.voo ? R.voo.no.replace(/\s/g, "") + "  " + rotaVoo(R.voo) + "  " + (R.voo.data || dataHoje()) + " " + hhmm(R.voo.ref) + "  PORT " + (R.voo.cancelado ? "--" : gateDe(R.voo)) : "---"),
       "  EMAIL: " + (R.email || "---") + "   TELEFONE: " + (R.tel || "---"),
+      ...((R.rf || R.tk) ? ["  RF: " + (R.rf || "---") + "   TKTL: " + (R.tk || "---")] : []),
       "  CLASSE: " + (R.classe === "EXEC" ? "EXECUTIVA" : "ECONOMICA") + "   MALOTAS POR PASSAGEIRO: " + R.bags,
       "  BAGAGEM: " + pesoTotal(R.paxs) + " KG   FRANQUIA: " + (franquiaKg(R.classe) * R.paxs.length) + " KG   TAXA DE PESO: " + brl(taxa),
       "  PAGAMENTO: " + (R.pag === "BALCAO" ? "NO BALCAO (NA RETIRADA)" : R.pag),
@@ -2470,8 +2622,21 @@
     T.hist.push(cmd);
     T.hi = T.hist.length;
     const partes = cmd.split(/\s+/);
-    const C = partes[0].toUpperCase();
-    const arg = partes.slice(1).join(" ");
+    let C = partes[0].toUpperCase();
+    let arg = partes.slice(1).join(" ");
+    const cu = cmd.toUpperCase();
+    if (C === "NM" || /^NM\d/.test(cu)) { C = "NM"; arg = cu.slice(2).trim(); }
+    else if (C === "TK" || /^TKTL/.test(cu)) { C = "TK"; arg = cu.slice(2).replace(/^TL/, "").trim(); }
+    else if (C === "AP" || /^AP\d/.test(cu) || /^APE-/.test(cu)) {
+      const r2 = (C === "AP" ? arg : cu.slice(2)).trim();
+      if (/^E-/.test(r2)) { C = "EMAIL"; arg = r2.slice(2).trim(); }
+      else { C = "TELEFONE"; arg = r2; }
+    }
+    else if (C === "SS" || /^SS\d/.test(cu)) { C = "SS"; arg = cu.slice(2).trim(); }
+    else if (C === "RT" || /^RT\//.test(cu)) { C = "RT"; arg = cu.slice(2).replace(/^\//, "").trim(); }
+    else if (C === "XE" || /^XE\d/.test(cu)) { C = "XE"; arg = cu.slice(2).trim(); }
+    else if (C === "XI") { C = "XI"; arg = ""; }
+    else if (C === "AN" || /^AN\d{2}[A-Z]{3}/.test(cu)) { C = "AN"; arg = cu.slice(2).trim(); }
     if (T.guia) {
       const s = proxPasso();
       const pg = s && s[1].indexOf("PAGAMENTO") === 0 && PAG_VALORES.indexOf(C) >= 0;
@@ -2563,6 +2728,14 @@
       case "*I": return termItinerario();
       case "X2": return termCancelarSegmento();
       case "ER": return termConfirmar();
+      case "AN": return termAn(arg);
+      case "NM": return termNomeGds(arg);
+      case "RF": return termRecebidoPor(arg);
+      case "TK": return termTktl(arg);
+      case "SS": return termSell(arg);
+      case "RT": return arg ? termConsultar(arg) : termExibirPnr();
+      case "XE": return termXe(arg);
+      case "XI": return termXi();
       case ".CE": return termCodificarCidade(arg);
       case ".CD": return termDecodificar(arg);
       case ".AE": return termCompanhias();

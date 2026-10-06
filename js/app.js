@@ -1228,6 +1228,11 @@
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
     "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS"];
+  const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
+    "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
+    "FONE", "PAG", "MAPA", "POLTRONA", "MALOTAS", "BAGAGEM", "RASCUNHO", "EMITIR", "LOCALIZAR", "PNR",
+    "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT"]));
+  const PAG_VALORES = ["CARTAO", "CREDITO", "DEBITO", "CAR", "PIX", "BOLETO", "BALCAO", "BALC"];
 
   function rPax() {
     const R = T.rascunho;
@@ -1963,7 +1968,25 @@
       termPrint(["", ">>> TUDO PREENCHIDO - DIGITE CONFIRMAR PARA EMITIR A RESERVA."], "hl");
       return;
     }
-    termPrint(["", ">>> PROXIMO PASSO: " + s[0], "    USE: " + s[1]], "sys");
+    termPrint(["", ">>> PROXIMO PASSO: " + s[0], "    USE: " + s[1] + "   OU DIGITE O VALOR DIRETO"], "sys");
+  }
+
+  function entradaPasso(valor) {
+    const R = T.rascunho;
+    const p = rPax();
+    if (!p.nome) return execCmd("PASSAGEIRO", valor);
+    if (!p.doc) return execCmd("DOC", valor);
+    if (!R.email) return execCmd("EMAIL", valor);
+    if (!R.tel) return execCmd("TELEFONE", valor);
+    const sem = R.paxs.findIndex((x) => !x.assento);
+    if (sem >= 0) {
+      if (sem !== R.ativo) R.ativo = sem;
+      return execCmd("ASSENTO", valor);
+    }
+    if (!R.opc.classe) return execCmd("CLASSE", valor);
+    if (!R.opc.malota) return execCmd("MALOTA", valor);
+    if (!R.opc.peso) return execCmd("PESO", valor);
+    if (!R.opc.pag) return execCmd("PAGAMENTO", valor);
   }
 
   function termCampo(chave, valor) {
@@ -2283,6 +2306,15 @@
     const partes = cmd.split(/\s+/);
     const C = partes[0].toUpperCase();
     const arg = partes.slice(1).join(" ");
+    if (T.guia) {
+      const s = proxPasso();
+      const pg = s && s[1].indexOf("PAGAMENTO") === 0 && PAG_VALORES.indexOf(C) >= 0;
+      if (s && (!CMD_SET.has(C) || pg)) {
+        entradaPasso(cmd);
+        mostraProximo();
+        return;
+      }
+    }
     execCmd(C, arg);
     if (T.guia && GUIA_CMDS.indexOf(C) >= 0) mostraProximo();
   }

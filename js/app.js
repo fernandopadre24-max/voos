@@ -139,8 +139,10 @@
 
   function classeStat(s) {
     if (s === "CANCELADO" || s.indexOf("ATRASADO") === 0) return "bad";
-    if (s === "EMBARQUE" || s === "ULTIMO CHAMADO" || s === "POUSOU" || s === "DESEMBARQUE") return "hot";
-    if (s === "PARTIU" || s === "CHEGOU") return "dim";
+    if (s === "ULTIMO CHAMADO") return "org";
+    if (s === "EMBARQUE" || s === "POUSOU" || s === "DESEMBARQUE") return "hot";
+    if (s === "PARTIU") return "deep";
+    if (s === "CHEGOU") return "dim";
     return "";
   }
 
@@ -225,6 +227,8 @@
       row.classList.toggle("st-hot", classeStat(st) === "hot");
       row.classList.toggle("st-bad", classeStat(st) === "bad");
       row.classList.toggle("st-dim", classeStat(st) === "dim");
+      row.classList.toggle("st-org", classeStat(st) === "org");
+      row.classList.toggle("st-deep", classeStat(st) === "deep");
       vals.forEach((v, j) => Flap.set(row._cells[j], v, i * 34 + j * 6));
     });
     const upd = $("#upd-" + tipo);

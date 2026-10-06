@@ -6,6 +6,7 @@
   --dim:#7d6212;
   --line:#2b2313;
   --green:#5cff9a;
+  --green-dark:#12a04d;
   --red:#ff5f4d;
   --paper:#efe9d8;
   --ink:#16120c;
@@ -142,8 +143,11 @@ main{padding:18px 22px;max-width:1180px;margin:0 auto}
 .row.st-hot{color:var(--green)}
 .row.st-bad{color:var(--red)}
 .row.st-dim{color:#9b7b1d}
+.row.st-org{color:var(--amber)}
+.row.st-deep{color:var(--green-dark)}
 .row.st-hot .c5 .fc{animation:blink 1s steps(2) infinite}
 .row.st-bad .c5 .fc{animation:blink .55s steps(2) infinite}
+.row.st-org .c5 .fc{animation:blink .8s steps(2) infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
 .ticker{
@@ -266,6 +270,8 @@ body:has(#view-reserva.on){padding-bottom:64px}
 .s-hot{color:var(--green)}
 .s-bad{color:var(--red)}
 .s-dim{color:#9b7b1d}
+.s-org{color:var(--amber)}
+.s-deep{color:var(--green-dark)}
 
 /* ---------- busca de voos ---------- */
 .busca{

@@ -459,6 +459,7 @@ const DATA = (function () {
   function gerarVoos(tipo, origem, destino, dia, soReais) {
     if (!AEROS[origem] || !AEROS[destino] || origem === destino) return [];
     const base = tipo === "partidas" ? DEPARTURES : ARRIVALS;
+    const real = tipo === "partidas" ? origem === "GRU" : destino === "GRU";
     const km = Math.max(25, DIST(origem, destino));
     const desloc = dia === 0 ? DELTA : 0;
     const outro = tipo === "partidas" ? destino : origem;
@@ -468,12 +469,12 @@ const DATA = (function () {
     base.forEach((f, i) => {
       const o = tipo === "partidas" ? "GRU" : f.from;
       const d = tipo === "partidas" ? f.to : "GRU";
-      if (soReais && (o !== origem || d !== destino)) return;
+      if (soReais && real && (o !== origem || d !== destino)) return;
       itens.push({ f, i });
     });
     return itens.map(({ f, i }) => {
       let dep, arr, dur;
-      if (soReais) {
+      if (soReais && real) {
         dep = (horaMin(f.dep) + desloc + 1440) % 1440;
         arr = (horaMin(f.arr) + desloc + 1440) % 1440;
         dur = duracao(dep, arr);

@@ -2,3 +2,5 @@
 __*.js
 __*.png
 
+.vercel
+.env*

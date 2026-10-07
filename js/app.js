@@ -11,6 +11,7 @@
 
   let reservas = [];
   try { reservas = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { reservas = []; }
+  const FILA = {};
 
   const MAX_PAX = 6;
   const W = {
@@ -139,6 +140,8 @@
 
   function classeStat(s) {
     if (s === "CANCELADO") return "bad";
+    if (s === "LOTADO") return "yel";
+    if (s === "LISTA DE ESPERA") return "org";
     if (s.indexOf("ATRASADO") === 0) return "yel";
     if (s === "ULTIMO CHAMADO") return "org";
     if (s === "EMBARQUE" || s === "POUSOU" || s === "DESEMBARQUE") return "hot";
@@ -216,7 +219,7 @@
     lista.forEach((f, i) => {
       const row = cont.children[i];
       row._voo = f;
-      const st = statusDe(f);
+      const st = rotuloLista(f);
       const vals = [
         pad(f.no, COLS[0]),
         pad(DATA.AIRLINES[f.al] || f.al, COLS[1]),
@@ -261,6 +264,9 @@
       W.flight = null;
     } else if (!podeReservar(f)) {
       W.aviso = "O VOO " + f.no + " ESTA COM SITUACAO " + statusDe(f) + ". APENAS VOOS COM SITUACAO PROGRAMADO PODERAO SER RESERVADOS.";
+      W.flight = null;
+    } else if (lotado(f)) {
+      W.aviso = "O VOO " + f.no + " ESTA LOTADO - NENHUMA POLTRONA LIVRE. ENTRE NA LISTA DE ESPERA NO TERMINAL: ESPERA " + f.no.replace(/\s/g, "");
       W.flight = null;
     } else {
       W.aviso = "";
@@ -345,6 +351,13 @@
         }
       }
     }
+    if (cheia(voo)) {
+      for (let r = 1; r <= L.linhas; r++) {
+        for (const g of L.grupos) {
+          for (const c of g) set.add(r + c);
+        }
+      }
+    }
     const k = chaveVoo(voo);
     reservas.forEach((x) => {
       if (x.status === "CANCELADA" || chaveVoo(x.voo) !== k) return;
@@ -356,7 +369,19 @@
   function seatMapHTML(voo, atual, bloqueados) {
     const L = layout(voo.ac);
     const ocup = ocupados(voo);
+    const nFila = filaSize(voo);
+    let espSeat = "";
+    if (nFila) {
+      for (let r = 1; r <= L.linhas; r++) {
+        for (const c of L.grupos.flat()) {
+          const id = r + c;
+          if (!ocup.has(id) && !(bloqueados && bloqueados.has(id))) { espSeat = id; break; }
+        }
+        if (espSeat) break;
+      }
+    }
     let h = '<div class="cockpit"><span>&uarr; PROA / FRENTE DO AVIAO</span><span>' + voo.ac + "</span></div>";
+    if (nFila) h += '<div class="esp-tag">LISTA DE ESPERA (' + nFila + ")" + (espSeat ? " · VAGA GARANTIDA: " + espSeat + " (SOMENTE P/ ESPERA)" : "") + "</div>";
     h += '<div class="seats">';
     for (let r = 1; r <= L.linhas; r++) {
       h += '<div class="seatrow"><span class="rownum">' + String(r).padStart(2, "0") + "</span>";
@@ -365,8 +390,9 @@
           const id = r + c;
           const taken = ocup.has(id) || !!(bloqueados && bloqueados.has(id));
           const sel = atual === id;
-          h += '<button type="button" class="seat' + (r <= L.exec ? " exec" : "") + (taken ? " taken" : "") + (sel ? " sel" : "") +
-            '" data-seat="' + id + '"' + (taken ? " disabled" : "") + ">" + id + "</button>";
+          const esp = !taken && espSeat === id;
+          h += '<button type="button" class="seat' + (r <= L.exec ? " exec" : "") + (taken ? " taken" : "") + (sel ? " sel" : "") + (esp ? " esp" : "") +
+            '" data-seat="' + id + '"' + (taken ? " disabled" : "") + ' title="' + (esp ? "VAGA GARANTIDA PELA LISTA DE ESPERA" : "ASSENTO " + id) + '">' + id + "</button>";
         });
         if (gi < L.grupos.length - 1) h += '<span class="aisle"></span>';
       });
@@ -374,6 +400,39 @@
     }
     h += "</div>";
     return h;
+  }
+
+  function totalAssentos(ac) {
+    const L = layout(ac);
+    return L.linhas * L.grupos.reduce((s, g) => s + g.length, 0);
+  }
+
+  function cheia(voo) {
+    return hash([voo.no, voo.origem, voo.destino, voo.tipo || ""].join("|")) % 6 === 0;
+  }
+
+  function livres(voo) {
+    return totalAssentos(voo.ac) - ocupados(voo).size;
+  }
+
+  function lotado(voo) {
+    return !!voo && livres(voo) === 0;
+  }
+
+  function filaKey(no) {
+    return String(no || "").replace(/\s/g, "").toUpperCase();
+  }
+
+  function filaSize(voo) {
+    const k = filaKey(voo.no);
+    return FILA[k] ? FILA[k].length : 0;
+  }
+
+  function rotuloLista(f) {
+    const st = statusDe(f);
+    if (st !== "PROGRAMADO") return st;
+    if (!lotado(f)) return st;
+    return filaSize(f) ? "LISTA DE ESPERA" : "LOTADO";
   }
 
   function precoBase(km) { return Math.max(219, Math.round((km * 0.47) / 10) * 10 - 1); }
@@ -1264,7 +1323,7 @@
     "V", ".PT", ".CH", ".VV"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
-    "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS", "CARTAO",
+    "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS", "CARTAO", "ESPERA",
     "*R", "*I", "X2", "ER", "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI"];
   const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
     "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
@@ -1294,6 +1353,7 @@
     ["DATA", "<DIA> DE 0 A 6"],
     ["SITUACAO", "<VOO> SITUACAO EM TEMPO REAL"],
     ["ALTERAR", "<VOO> [DIA] [HH:MM] MUDA DIA E HORA DO VOO"],
+    ["ESPERA", "<VOO> ENTRA NA LISTA DE ESPERA DO VOO LOTADO"],
     ["AOVIVO", "TRAFEGO AO VIVO DO GRU"],
     ["TARIFA", "<ORI> <DES> TARIFA E DISTANCIA"],
     ["VALOR", "COMPOSICAO DO VALOR DA RESERVA"],
@@ -1491,6 +1551,7 @@
       " DATA <DIA> .......... DATA ALVO DE 0 A 6 (EX.: DATA AMANHA)",
       " SITUACAO <VOO> ...... SITUACAO EM TEMPO REAL DO VOO (API REAL SE ATIVA)",
       " ALTERAR <VOO> ....... MUDA DIA E HORA DO VOO (EX.: ALTERAR LA3375 18:30)",
+      " ESPERA <VOO> ........ ENTRA NA LISTA DE ESPERA DO VOO LOTADO",
       " AOVIVO .............. TRAFEGO AO VIVO DE VERDADE PROXIMO AO GRU",
       " TARIFA <ORI> <DES> .. TARIFA, DISTANCIA E DURACAO DA ROTA",
       " VALOR ............... COMPOSICAO DO VALOR DA RESERVA",
@@ -1647,7 +1708,7 @@
   }
 
   function primeiroProgramado(lista) {
-    for (let n = 0; n < lista.length; n++) if (statusDe(lista[n]) === "PROGRAMADO") return n + 1;
+    for (let n = 0; n < lista.length; n++) if (statusDe(lista[n]) === "PROGRAMADO" && !lotado(lista[n])) return n + 1;
     return null;
   }
 
@@ -1685,7 +1746,7 @@
     ];
     lista.forEach((f, n) => {
       l.push(pad(n + 1, 4) + pad(f.no.replace(/\s/g, ""), 8) + pad(DATA.AIRLINES[f.al] || f.al, 12) + pad(celDestino(f, 18), 18) +
-        pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + statusDe(f));
+        pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + rotuloLista(f));
     });
     l.push("SELECIONE O VOO: RESERVAR <NUMERO DA LINHA>" + (primeiroProgramado(lista) ? "  EX.: RESERVAR " + primeiroProgramado(lista) : ""));
     termPrint(l);
@@ -1874,7 +1935,7 @@
     if (r.erro) return termErro(r.erro);
     if (r.multi) return termPrint(r.multi);
     const f = r.voo;
-    const st = statusDe(f);
+    const st = rotuloLista(f);
     const atraso = f.delay || 0;
     const cor = f.cancelado ? "bad" : (classeStat(st) === "hot" ? "hl" : "sys");
     termPrint([
@@ -1885,11 +1946,31 @@
       "  DATA: " + (f.data || dataHoje()) + (f.dia ? "  " + (f.semana || "") : ""),
       "  HORARIO: " + hhmm(f.ref) + (atraso ? "  (ATRASO DE " + atraso + " MIN)" : "  (NO HORARIO)"),
       "  DURACAO: " + durTxt(f.dur) + "   AERONAVE: " + f.ac + "   PORTAO: " + (f.cancelado ? "--" : gateDe(f)),
-      "  SITUACAO: " + st
+      "  SITUACAO: " + st + (filaSize(f) ? "   (ESPERA: " + filaSize(f) + ")" : "")
     ], cor);
+    if (filaSize(f)) {
+      const fl = FILA[filaKey(f)];
+      termPrint("  FILA DE ESPERA (" + filaSize(f) + "): " + fl.map((q, p) => (p + 1) + "." + q.nome).join("   "), "org");
+    }
     situacaoReal(f).then(function (linhas) {
       if (linhas.length) termPrint(linhas, "hl");
     }).catch(function () {});
+  }
+
+  function termEspera(arg) {
+    if (!arg.trim()) return termErro(["ERRO: USE ESPERA <VOO>. EX.: ESPERA LA3375", "ENTRA NA LISTA DE ESPERA DE UM VOO LOTADO."]);
+    const f = (termLista() || []).find((x) => x.no.replace(/\s/g, "") === arg.toUpperCase().replace(/\s+/g, ""));
+    if (!f) return termErro(["ERRO: VOO '" + arg.trim().toUpperCase() + "' NAO ENCONTRADO.", "USE O COMANDO VOOS."]);
+    if (!lotado(f)) return termErro(["O VOO " + f.no.replace(/\s/g, "") + " AINDA TEM " + livres(f) + " POLTRONA(S) LIVRE(S).", "USE RESERVAR " + f.no.replace(/\s/g, "") + " PARA RESERVAR AGORA."]);
+    const p = T.rascunho.paxs[T.rascunho.ativo] || {};
+    if (!p.nome) return termErro(["ERRO: INFORME SEU NOME: PASSAGEIRO <NOME COMPLETO>", "DEPOIS: ESPERA " + f.no.replace(/\s/g, "")]);
+    const k = filaKey(f);
+    FILA[k] = FILA[k] || [];
+    const r = FILA[k].find((x) => x.nome === p.nome);
+    if (r) return termErro(["VOCE JA ESTA NA LISTA DE ESPERA DO VOO " + f.no.replace(/\s/g, "") + " NA POSICAO " + (FILA[k].indexOf(r) + 1) + "."]);
+    if (FILA[k].length >= 4) return termErro(["A LISTA DE ESPERA DO VOO " + f.no.replace(/\s/g, "") + " JA TEM 4 PASSAGEIROS.", "VOLTE MAIS TARDE."]);
+    FILA[k].push({ nome: p.nome, quando: Date.now() });
+    termPrint(["VOCE ENTROU NA LISTA DE ESPERA DO VOO " + f.no.replace(/\s/g, "") + " NA POSICAO " + FILA[k].length + ".", "SE ALGUEM CANCELAR, A POLTRONA SAI DO MODO PASSAGEIRO E O BOARDO MARCA SUA VAGA."], "hl");
   }
 
   function termTarifa(arg) {
@@ -2398,7 +2479,7 @@
     ];
     lista.forEach((f, i) => {
       l.push(pad(i + 1, 4) + pad(f.no.replace(/\s/g, ""), 8) + pad(DATA.AIRLINES[f.al] || f.al, 12) + pad(celDestino(f, 18), 18) +
-        pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + statusDe(f));
+        pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + rotuloLista(f));
     });
     return l;
   }
@@ -2425,7 +2506,7 @@
     ];
     lista.forEach((f, i) => {
       l.push(pad(i + 1, 4) + pad(f.no.replace(/\s/g, ""), 8) + pad(DATA.AIRLINES[f.al] || f.al, 12) + pad(celDestino(f, 18), 18) +
-        pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + statusDe(f));
+        pad(hhmm(f.ref), 7) + pad(f.cancelado ? "--" : gateDe(f), 6) + rotuloLista(f));
     });
     l.push("USE: SITUACAO <VOO> PARA VER OS DETALHES DO VOO.");
     termPrint(l);
@@ -2443,6 +2524,12 @@
         "ERRO: O VOO " + f.no.replace(/\s/g, "") + " ESTA COM SITUACAO " + statusDe(f) + ".",
         "APENAS VOOS COM SITUACAO PROGRAMADO PODERAO SER RESERVADOS.",
         "USE O COMANDO VOOS PARA VER A SITUACAO DE CADA VOO."
+      ]);
+    }
+    if (lotado(f)) {
+      return termErro([
+        "ERRO: O VOO " + f.no.replace(/\s/g, "") + " ESTA LOTADO - NENHUMA POLTRONA LIVRE.",
+        "ENTRE NA LISTA DE ESPERA: ESPERA " + f.no.replace(/\s/g, "") + "  (SE ALGUEM CANCELAR, VOCE RECEBE A VAGA AUTOMATICAMENTE)."
       ]);
     }
     T.rascunho.voo = f;
@@ -2893,6 +2980,7 @@
       case "DATA": case "DIA": return termData(arg);
       case "SITUACAO": case "INFO": return termSituacao(arg);
       case "ALTERAR": return termAlterar(arg);
+      case "ESPERA": return termEspera(arg);
       case "AOVIVO": case "LIVE": case "TRAFEGO": return termAoVivo();
       case "TARIFA": case "TARIFAS": return termTarifa(arg);
       case "VALOR": case "PRECO": return termValor();

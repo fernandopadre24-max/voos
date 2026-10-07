@@ -138,7 +138,8 @@
   function podeReservar(f) { return !!f && statusDe(f) === "PROGRAMADO"; }
 
   function classeStat(s) {
-    if (s === "CANCELADO" || s.indexOf("ATRASADO") === 0) return "bad";
+    if (s === "CANCELADO") return "bad";
+    if (s.indexOf("ATRASADO") === 0) return "yel";
     if (s === "ULTIMO CHAMADO") return "org";
     if (s === "EMBARQUE" || s === "POUSOU" || s === "DESEMBARQUE") return "hot";
     if (s === "PARTIU") return "deep";
@@ -229,6 +230,7 @@
       row.classList.toggle("st-dim", classeStat(st) === "dim");
       row.classList.toggle("st-org", classeStat(st) === "org");
       row.classList.toggle("st-deep", classeStat(st) === "deep");
+      row.classList.toggle("st-yel", classeStat(st) === "yel");
       vals.forEach((v, j) => Flap.set(row._cells[j], v, i * 34 + j * 6));
     });
     const upd = $("#upd-" + tipo);
@@ -1423,8 +1425,8 @@
   }
 
   function pintarStatus(el, txt) {
-    if (txt.indexOf("CANCELADO") < 0 && txt.indexOf("ULTIMO CHAMADO") < 0 && txt.indexOf("PARTIU") < 0) return;
-    const re = /(CANCELADO|ULTIMO CHAMADO|PARTIU)/g;
+    if (txt.indexOf("CANCELADO") < 0 && txt.indexOf("ULTIMO CHAMADO") < 0 && txt.indexOf("PARTIU") < 0 && txt.indexOf("ATRASADO") < 0) return;
+    const re = /(ATRASADO|CANCELADO|ULTIMO CHAMADO|PARTIU)/g;
     el.textContent = "";
     let last = 0;
     let m;

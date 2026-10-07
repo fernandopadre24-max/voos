@@ -31,14 +31,14 @@
 </header>
 
 <nav class="tabs" id="tabs">
-  <button class="tab" data-tab="atendimento">ATENDIMENTO</button>
-  <button class="tab on" data-tab="partidas" aria-current="page">PARTIDAS</button>
-  <button class="tab" data-tab="chegadas">CHEGADAS</button>
-  <button class="tab" data-tab="aovivo">AO VIVO</button>
   <button class="tab" data-tab="torre">TORRE</button>
+  <button class="tab" data-tab="atendimento">ATENDIMENTO</button>
   <button class="tab" data-tab="reserva">RESERVA</button>
   <button class="tab" data-tab="bilhetes">BILHETES <span class="badge" id="badge">0</span></button>
   <button class="tab" data-tab="checkin">CHECK-IN</button>
+  <button class="tab on" data-tab="partidas" aria-current="page">PARTIDAS</button>
+  <button class="tab" data-tab="chegadas">CHEGADAS</button>
+  <button class="tab" data-tab="aovivo">AO VIVO</button>
   <button class="tab tab-som" id="btnSom">SOM : OFF</button>
 </nav>
 
@@ -121,6 +121,11 @@
       <h1>TORRE DE CONTROLE <span>/ TOWER RADAR</span></h1>
       <div class="board-tools">
         <label class="rota-f"><span>ALCANCE</span><select class="sel" id="torre-alcance"></select></label>
+        <div class="torre-zoom">
+          <button id="torre-zoom-in">+</button>
+          <input type="number" id="torre-zoom-val" min="150" max="20000" step="150" value="1200"> <span>KM</span>
+          <button id="torre-zoom-out">-</button>
+        </div>
         <span class="upd" id="torre-upd">ATUALIZADO 00:00:00</span>
       </div>
     </div>
@@ -131,6 +136,11 @@
       </div>
       <aside class="torre-lado">
         <div class="torre-stats" id="torre-stats"></div>
+        <div class="torre-selec">
+          <span>SELECIONAR</span>
+          <input type="range" id="torre-sel" min="0" max="0" value="0" aria-label="Selecionar voo">
+          <b id="torre-sel-lbl">—</b>
+        </div>
         <div class="tl-head"><span>VOO</span><span>ROTA</span><span>SITUACAO</span><span>INFO</span><span>DIST</span></div>
         <div class="torre-lista" id="torre-lista"></div>
         <div class="torre-legenda"></div>

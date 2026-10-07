@@ -44,6 +44,8 @@ const TORRE = (function () {
   let varredura = 0;
   let alvos = [];
   let selId = null, hoverId = null, hoverLista = null;
+  let ordem = [];
+  let usuarioSlider = false;
   let assin = "";
 
   function hhmm(m) {
@@ -297,16 +299,32 @@ const TORRE = (function () {
     }
   }
 
-  function triangulo(x, y, ang, tam, cor) {
+  function aviao(x, y, ang, tam, cor) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rad(ang));
     ctx.fillStyle = cor;
     ctx.beginPath();
-    ctx.moveTo(tam, 0);
-    ctx.lineTo(-tam * 0.7, tam * 0.62);
-    ctx.lineTo(-tam * 0.4, 0);
-    ctx.lineTo(-tam * 0.7, -tam * 0.62);
+    ctx.moveTo(0, -tam);
+    ctx.lineTo(tam * 0.14, -tam * 0.45);
+    ctx.lineTo(tam * 0.14, -tam * 0.15);
+    ctx.lineTo(tam * 0.95, tam * 0.45);
+    ctx.lineTo(tam * 0.95, tam * 0.62);
+    ctx.lineTo(tam * 0.14, tam * 0.42);
+    ctx.lineTo(tam * 0.14, tam * 0.72);
+    ctx.lineTo(tam * 0.5, tam * 0.98);
+    ctx.lineTo(tam * 0.5, tam * 1.1);
+    ctx.lineTo(tam * 0.1, tam * 1.02);
+    ctx.lineTo(0, tam * 1.1);
+    ctx.lineTo(-tam * 0.1, tam * 1.02);
+    ctx.lineTo(-tam * 0.5, tam * 1.1);
+    ctx.lineTo(-tam * 0.5, tam * 0.98);
+    ctx.lineTo(-tam * 0.14, tam * 0.72);
+    ctx.lineTo(-tam * 0.14, tam * 0.42);
+    ctx.lineTo(-tam * 0.95, tam * 0.62);
+    ctx.lineTo(-tam * 0.95, tam * 0.45);
+    ctx.lineTo(-tam * 0.14, -tam * 0.15);
+    ctx.lineTo(-tam * 0.14, -tam * 0.45);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -394,19 +412,10 @@ const TORRE = (function () {
       if (!vis(a)) {
         const pr = proj(a.lat, a.lon);
         const angB = Math.atan2(pr.y, pr.x);
-        const x = cx + Math.cos(angB) * (raio - 6);
-        const y = cy + Math.sin(angB) * (raio - 6);
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angB);
-        ctx.fillStyle = a.cor;
-        ctx.beginPath();
-        ctx.moveTo(6, 0);
-        ctx.lineTo(-4, 4);
-        ctx.lineTo(-4, -4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
+        const x = cx + Math.cos(angB) * (raio - 7);
+        const y = cy + Math.sin(angB) * (raio - 7);
+        const h = a.tipo === "adsb" ? (a.v && a.v.rumo ? a.v.rumo : grau(angB) + 90) : a.rumo;
+        aviao(x, y, h, 4.5, a.cor);
         continue;
       }
       const p = pos(a);
@@ -423,7 +432,7 @@ const TORRE = (function () {
         ctx.stroke();
         if (on || !a.v.gnd) rotulo(p.x + s + 3, p.y - 4, a.no + " " + a.info, a.cor);
       } else if (a.aereo) {
-        triangulo(p.x, p.y, a.rumo, on ? 8 : 6.5, a.cor);
+        aviao(p.x, p.y, a.rumo, on ? 8 : 6.5, a.cor);
         rotulo(p.x + 9, p.y - 5, a.no, on ? "#fff" : "#d9cfa8");
         rotulo(p.x + 9, p.y + 7, a.info + " · " + nf(a.dist) + " KM", on ? "#fff" : "rgba(217,207,168,.7)");
       } else {
@@ -529,12 +538,14 @@ const TORRE = (function () {
       (grupos[s] = grupos[s] || []).push(a);
     }
     let html = "";
+    ordem = [];
     for (const [key, tit] of SEC) {
       const g = grupos[key] || [];
       if (!g.length) continue;
       g.sort(ORDEM[key] || ORDEM.outros);
       html += '<div class="tl-sec">' + tit + " · " + g.length + "</div>";
       for (const a of g.slice(0, 80)) {
+        ordem.push(a);
         const on = a.id === selId ? " on" : a.id === hoverLista ? " hov" : "";
         html += '<div class="tl-row' + on + '" data-id="' + esc(a.id) + '">' +
           '<span style="color:' + a.cor + '">' + esc(a.no) + "</span>" +
@@ -545,6 +556,34 @@ const TORRE = (function () {
       }
     }
     el.innerHTML = html || '<div class="tl-sec">SEM DADOS</div>';
+    sincSlider();
+  }
+
+  function sincSlider() {
+    const sl = $("#torre-sel");
+    if (!sl) return;
+    sl.max = String(Math.max(0, ordem.length - 1));
+    const i = ordem.findIndex((a) => a.id === selId);
+    if (i >= 0 && Number(sl.value) !== i && document.activeElement !== sl) sl.value = String(i);
+    const lb = $("#torre-sel-lbl");
+    if (lb) {
+      const a = i >= 0 ? ordem[i] : null;
+      lb.textContent = a ? a.no + " · " + (i + 1) + "/" + ordem.length : ordem.length + " VOOS";
+      lb.title = a ? a.rota + " " + a.sit : "";
+    }
+  }
+
+  function selecionarPorSlider() {
+    if (!usuarioSlider) return;
+    const sl = $("#torre-sel");
+    if (!sl) return;
+    const a = ordem[Number(sl.value)];
+    if (!a) return;
+    selId = a.id;
+    ficha(a);
+    listar();
+    const row = $("#torre-lista .tl-row.on");
+    if (row) row.scrollIntoView({ block: "nearest" });
   }
 
   function legenda() {
@@ -570,7 +609,9 @@ const TORRE = (function () {
     const u = $("#torre-upd");
     if (u) u.textContent = "ATUALIZADO " + hora();
     const ar = $("#torre-alcance");
-    if (ar && ar.value !== modoAlcance) ar.value = modoAlcance;
+    if (ar && document.activeElement !== ar && ar.value !== modoAlcance) ar.value = modoAlcance;
+    const zv = $("#torre-zoom-val");
+    if (zv && document.activeElement !== zv && Number(zv.value) !== alcance) zv.value = alcance;
   }
 
   function loop(ts) {
@@ -608,6 +649,33 @@ const TORRE = (function () {
     ctx = cv.getContext("2d");
     tela();
 
+    const zval = $("#torre-zoom-val");
+    const zin = $("#torre-zoom-in");
+    const zout = $("#torre-zoom-out");
+
+    function refletirZoom() {
+      if (zval && Number(zval.value) !== alcance) zval.value = alcance;
+      if (ar && ar.value !== modoAlcance) ar.value = modoAlcance;
+    }
+
+    function aplicar(km) {
+      km = clamp(km, 150, 20000);
+      alcance = km;
+      modoAlcance = String(km);
+      if (ar) {
+        let opt = ar.querySelector('option[value="' + km + '"]');
+        if (!opt) {
+          opt = document.createElement("option");
+          opt.value = String(km);
+          opt.textContent = nf(km) + " KM";
+          ar.appendChild(opt);
+        }
+        ar.value = String(km);
+      }
+      atualizar();
+      refletirZoom();
+    }
+
     const ar = $("#torre-alcance");
     if (ar) {
       ar.innerHTML = '<option value="auto">AUTO</option>' +
@@ -617,7 +685,26 @@ const TORRE = (function () {
         modoAlcance = ar.value;
         if (modoAlcance !== "auto") alcance = Number(modoAlcance);
         atualizar();
+        refletirZoom();
       });
+    }
+
+    if (zin) zin.addEventListener("click", () => {
+      const prox = ALCANCES.find((x) => x > alcance) || 20000;
+      aplicar(prox);
+    });
+    if (zout) zout.addEventListener("click", () => {
+      const prox = ALCANCES.slice().reverse().find((x) => x < alcance) || 150;
+      aplicar(prox);
+    });
+    if (zval) zval.addEventListener("change", () => aplicar(Number(zval.value) || 1200));
+
+    const sl = $("#torre-sel");
+    if (sl) {
+      sl.addEventListener("pointerdown", () => { usuarioSlider = true; });
+      sl.addEventListener("keydown", () => { usuarioSlider = true; });
+      sl.addEventListener("input", selecionarPorSlider);
+      sl.addEventListener("change", selecionarPorSlider);
     }
 
     cv.addEventListener("click", (e) => {

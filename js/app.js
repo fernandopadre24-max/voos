@@ -1066,15 +1066,55 @@
     return '<span class="chip rs">RESERVADA</span>';
   }
 
+  function normTxt(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+  }
+
+  function aeroCasado(q, cod) {
+    if (cod === q) return true;
+    const A = DATA.AEROS[cod];
+    if (!A) return false;
+    return normTxt(A.cidade).indexOf(q) === 0 || normTxt(A.nome).indexOf(q) === 0;
+  }
+
+  function filtroReserva() {
+    const de = normTxt($("#b-de") && $("#b-de").value);
+    const para = normTxt($("#b-para") && $("#b-para").value);
+    return (r) => {
+      const v = r.voo || {};
+      if (de && !aeroCasado(de, v.origem)) return false;
+      if (para && !aeroCasado(para, v.destino)) return false;
+      return true;
+    };
+  }
+
+  function montarAeroList() {
+    const dl = $("#aero-list");
+    if (!dl) return;
+    dl.innerHTML = Object.keys(DATA.AEROS).map((k) => {
+      const a = DATA.AEROS[k];
+      return '<option value="' + a.cidade + '">' + k + " · " + a.nome + "</option>" +
+        '<option value="' + k + '">' + a.cidade + " · " + a.nome + "</option>";
+    }).join("");
+  }
+
   function renderBilhetes() {
     const c = $("#lista-bilhetes");
     if (!reservas.length) {
-      c.innerHTML = painel("NENHUMA RESERVA", '<div class="vazio">SEM BILHETES EMITIDOS NESTE TERMINAL.<br><br><button class="btn prim" id="ir-res">FIZER UMA RESERVA</button></div>');
+      c.innerHTML = painel("NENHUMA RESERVA", '<div class="vazio">SEM BILHETES EMITIDOS NESTE TERMINAL.<br><br><button class="btn prim" id="ir-res">FAZER UMA RESERVA</button></div>');
       $("#ir-res", c).addEventListener("click", () => { novaReserva(); irPara("reserva"); });
       return;
     }
-    const ordem = reservas.slice().sort((a, b) => b.criado - a.criado);
-    c.innerHTML = ordem.map((r) => {
+    const de = normTxt($("#b-de") && $("#b-de").value);
+    const para = normTxt($("#b-para") && $("#b-para").value);
+    const lista = reservas.filter(filtroReserva()).sort((a, b) => b.criado - a.criado);
+    if (!lista.length) {
+      c.innerHTML = painel("NENHUMA RESERVA ENCONTRADA", '<div class="vazio">NENHUM BILHETE CORRESPONDE A DE/PARA INFORMADOS.<br><br><button class="btn prim" id="b-limp">LIMPAR FILTROS</button></div>');
+      $("#b-limp", c).addEventListener("click", () => { $("#b-de").value = ""; $("#b-para").value = ""; renderBilhetes(); });
+      return;
+    }
+    c.innerHTML = (de || para ? '<div class="res-count">' + lista.length + " RESERVA" + (lista.length > 1 ? "S" : "") + " PARA " + (de || "?") + " &rarr; " + (para || "?") + "</div>" : "") +
+      lista.map((r) => {
       const v = r.voo;
       const ps = paxList(r);
       const assentos = ps.map((p) => p.assento).join(" + ");
@@ -3215,6 +3255,14 @@
     });
 
     $("#lista-bilhetes").addEventListener("click", clicarBilhetes);
+    montarAeroList();
+    const reRenderBilhetes = () => renderBilhetes();
+    const bDe = $("#b-de");
+    const bPara = $("#b-para");
+    const bLimpar = $("#b-limpar");
+    if (bDe) bDe.addEventListener("input", reRenderBilhetes);
+    if (bPara) bPara.addEventListener("input", reRenderBilhetes);
+    if (bLimpar) bLimpar.addEventListener("click", () => { if (bDe) bDe.value = ""; if (bPara) bPara.value = ""; renderBilhetes(); });
 
     initTerminal();
     montarTermCmds();

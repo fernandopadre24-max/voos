@@ -127,6 +127,16 @@
     <div class="board-head">
       <h1>MINHAS RESERVAS <span>/ TICKETS</span></h1>
     </div>
+    <div class="res-filtros">
+      <label class="res-f"><span>DE</span>
+        <input id="b-de" class="in res-busca" list="aero-list" placeholder="CIDADE OU SIGLA" autocomplete="off">
+      </label>
+      <label class="res-f"><span>PARA</span>
+        <input id="b-para" class="in res-busca" list="aero-list" placeholder="CIDADE OU SIGLA" autocomplete="off">
+      </label>
+      <button type="button" class="btn" id="b-limpar">LIMPAR</button>
+    </div>
+    <datalist id="aero-list"></datalist>
     <div id="lista-bilhetes"></div>
   </section>
 

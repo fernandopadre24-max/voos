@@ -1319,7 +1319,7 @@
     "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
     "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF",
     "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI",
-    "*LM", "*CM", "*ACM", "*C", "*LR", "*N", "*LT", "*RV", "*LP", "*RM", "*MAV", "*ASS", "*AL", "*CHK", "$PG", "$V",
+    "*LM", "*CM", "*ACM", "*C", "*LR", "*N", "*LT", "*RV", "*LP", "*RM", "*MAV", "*ASS", "*AL", "*CHK", "$PG", "$V", "*ALLP",
     "V", ".PT", ".CH", ".VV"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
@@ -1328,12 +1328,12 @@
   const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
     "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
     "FONE", "PAG", "MAPA", "POLTRONA", "MALOTAS", "BAGAGEM", "RASCUNHO", "EMITIR", "LOCALIZAR", "PNR",
-    "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT", "LM", "ACM"]));
+    "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT", "LM", "ACM", "ALLP"]));
   const PAG_VALORES = ["CARTAO", "CREDITO", "DEBITO", "CAR", "PIX", "BOLETO", "BALCAO", "BALC"];
   const ALIAS_TERM = [
     ["*ACM", "ACM"], ["*MAV", "ASSENTOS"], ["*CHK", "CHECKIN"], ["*ASS", "ASSENTO"],
     ["*CM", "CADASTRAR"], ["*LP", "PASSAGEIROS"], ["*LM", "LM"], ["*LT", "LIMPAR"],
-    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LR", "BILHETES"], ["*AL", "ASSENTOLIVRE"],
+    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LR", "BILHETES"], ["*AL", "ASSENTOLIVRE"], ["*ALLP", "ALLP"],
     ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"],
     [".PT", "VOOS"], [".CH", "CHEGADAS"], [".VV", "AOVIVO"], ["V", "VOOS", 1]
   ];
@@ -1354,6 +1354,7 @@
     ["SITUACAO", "<VOO> SITUACAO EM TEMPO REAL"],
     ["ALTERAR", "<VOO> [DIA] [HH:MM] MUDA DIA E HORA DO VOO"],
     ["ESPERA", "<VOO> ENTRA NA LISTA DE ESPERA DO VOO LOTADO"],
+    ["*ALLP", "<VOO> DADOS DE TODOS OS PASSAGEIROS (NOME, ASSENTO, CLASSE)"],
     ["AOVIVO", "TRAFEGO AO VIVO DO GRU"],
     ["TARIFA", "<ORI> <DES> TARIFA E DISTANCIA"],
     ["VALOR", "COMPOSICAO DO VALOR DA RESERVA"],
@@ -1552,6 +1553,7 @@
       " SITUACAO <VOO> ...... SITUACAO EM TEMPO REAL DO VOO (API REAL SE ATIVA)",
       " ALTERAR <VOO> ....... MUDA DIA E HORA DO VOO (EX.: ALTERAR LA3375 18:30)",
       " ESPERA <VOO> ........ ENTRA NA LISTA DE ESPERA DO VOO LOTADO",
+      " *ALLP <VOO> .......... DADOS DE TODOS OS PASSAGEIROS DO VOO",
       " AOVIVO .............. TRAFEGO AO VIVO DE VERDADE PROXIMO AO GRU",
       " TARIFA <ORI> <DES> .. TARIFA, DISTANCIA E DURACAO DA ROTA",
       " VALOR ............... COMPOSICAO DO VALOR DA RESERVA",
@@ -1971,6 +1973,31 @@
     if (FILA[k].length >= 4) return termErro(["A LISTA DE ESPERA DO VOO " + f.no.replace(/\s/g, "") + " JA TEM 4 PASSAGEIROS.", "VOLTE MAIS TARDE."]);
     FILA[k].push({ nome: p.nome, quando: Date.now() });
     termPrint(["VOCE ENTROU NA LISTA DE ESPERA DO VOO " + f.no.replace(/\s/g, "") + " NA POSICAO " + FILA[k].length + ".", "SE ALGUEM CANCELAR, A POLTRONA SAI DO MODO PASSAGEIRO E O BOARDO MARCA SUA VAGA."], "hl");
+  }
+
+  function termAllp(arg) {
+    if (!arg.trim()) return termErro(["ERRO: USE *ALLP <VOO>. EX.: *ALLP LA3375", "LISTA OS DADOS DE TODOS OS PASSAGEIROS DO VOO (NOME, ASSENTO E CLASSE)."]);
+    const achado = termAcharVoo(arg, termLista() || []);
+    if (achado.erro) return termErro(achado.erro);
+    if (achado.multi) return termPrint(achado.multi);
+    const f = achado.voo;
+    const k = chaveVoo(f);
+    const rs = reservas.filter((r) => r.status !== "CANCELADA" && chaveVoo(r.voo) === k);
+    const l = [
+      "PASSAGEIROS DO VOO " + f.no.replace(/\s/g, "") + " - " + rotaVoo(f) + "  " + (f.data || dataHoje()) + " " + hhmm(f.ref) + "  " + f.ac,
+      pad("N", 4) + pad("ASSENTO", 9) + pad("CLASSE", 10) + "NOME"
+    ];
+    const seats = new Set();
+    let n = 0;
+    rs.forEach((r) => paxList(r).forEach((p) => {
+      n++;
+      if (p.assento) seats.add(p.assento);
+      l.push(pad(n + ".", 4) + pad(p.assento || "---", 9) + pad(r.classe, 10) + (p.nome || "").toUpperCase());
+    }));
+    const simulados = ocupados(f).size - seats.size;
+    if (!n) l.push("NENHUMA RESERVA NOMINAL PARA ESTE VOO AINDA.");
+    l.push("TOTAL: " + n + " PASSAGEIRO(S) NOMINAL(IS)  ·  " + (simulados > 0 ? simulados + " ASSENTO(S) OCUPADO(S) DA SIMULACAO (SEM NOME)" : "TODOS OS ASSENTOS IDENTIFICADOS"));
+    termPrint(l);
   }
 
   function termTarifa(arg) {
@@ -2981,6 +3008,7 @@
       case "SITUACAO": case "INFO": return termSituacao(arg);
       case "ALTERAR": return termAlterar(arg);
       case "ESPERA": return termEspera(arg);
+      case "ALLP": return termAllp(arg);
       case "AOVIVO": case "LIVE": case "TRAFEGO": return termAoVivo();
       case "TARIFA": case "TARIFAS": return termTarifa(arg);
       case "VALOR": case "PRECO": return termValor();

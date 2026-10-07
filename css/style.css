@@ -6,7 +6,7 @@
   --dim:#7d6212;
   --line:#2b2313;
   --green:#5cff9a;
-  --green-dark:#12a04d;
+  --blue-light:#63c7ff;
   --red:#ff5f4d;
   --paper:#efe9d8;
   --ink:#16120c;
@@ -144,7 +144,7 @@ main{padding:18px 22px;max-width:1180px;margin:0 auto}
 .row.st-bad{color:var(--red)}
 .row.st-dim{color:#9b7b1d}
 .row.st-org{color:var(--amber)}
-.row.st-deep{color:var(--green-dark)}
+.row.st-deep{color:var(--blue-light)}
 .row.st-hot .c5 .fc{animation:blink 1s steps(2) infinite}
 .row.st-bad .c5 .fc{animation:blink .55s steps(2) infinite}
 .row.st-org .c5 .fc{animation:blink .8s steps(2) infinite}
@@ -271,7 +271,7 @@ body:has(#view-reserva.on){padding-bottom:64px}
 .s-bad{color:var(--red)}
 .s-dim{color:#9b7b1d}
 .s-org{color:var(--amber)}
-.s-deep{color:var(--green-dark)}
+.s-deep{color:var(--blue-light)}
 
 /* ---------- busca de voos ---------- */
 .busca{
@@ -539,7 +539,7 @@ body:has(#view-reserva.on){padding-bottom:64px}
 .to-line.hl{color:#d6ffe6;font-weight:bold}
 .ts-bad{color:var(--red)}
 .ts-org{color:var(--amber)}
-.ts-deep{color:var(--green-dark)}
+.ts-deep{color:var(--blue-light)}
 .term-line{
   position:relative;display:flex;align-items:center;gap:9px;margin-top:8px;
   border-top:1px solid #123312;padding-top:9px;

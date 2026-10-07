@@ -647,8 +647,6 @@
         .sort((a, b) => (W.dia ? a.ref - b.ref : ordemChave(a) - ordemChave(b)));
       W.lista = lista;
       if (W.flight && (!lista.some((f) => chaveVoo(f) === chaveVoo(W.flight)) || !podeReservar(W.flight))) W.flight = null;
-      const opcoes = (excluir, sel) => DATA.listaAeroportos(excluir).map((c) =>
-        `<option value="${c}"${c === sel ? " selected" : ""}>${c} · ${DATA.AEROS[c].cidade} (${DATA.AEROS[c].nome})</option>`).join("");
       const tarifa = precoBase(Math.max(25, DATA.DIST(W.origem, W.destino)));
       let corpo = "";
       if (W.aviso) corpo += '<div class="aviso">' + W.aviso + "</div>";
@@ -666,11 +664,11 @@
                 </button>`).join("")}
             </div>
           </div>
-          <label class="bk">AEROPORTO DE ORIGEM
-            <select class="sel" id="bs-ori">${opcoes(null, W.origem)}</select>
+          <label class="bk">DE &middot; ORIGEM
+            <input class="in bs-rota" id="bs-ori" list="aero-list" value="${W.origem}" placeholder="CIDADE OU SIGLA" autocomplete="off">
           </label>
-          <label class="bk">AEROPORTO DE DESTINO
-            <select class="sel" id="bs-des">${opcoes(W.origem, W.destino)}</select>
+          <label class="bk">PARA &middot; DESTINO
+            <input class="in bs-rota" id="bs-des" list="aero-list" value="${W.destino}" placeholder="CIDADE OU SIGLA" autocomplete="off">
           </label>
           <label class="bk full">BUSCAR VOO
             <div class="busca-linha">
@@ -709,14 +707,19 @@
         renderWizard();
       }));
       $("#bs-ori", alvo).addEventListener("change", (e) => {
-        W.origem = e.target.value;
+        const novo = aeroPorTexto(e.target.value);
+        if (!novo || novo === W.origem) { e.target.value = W.origem; return; }
+        W.origem = novo;
         if (W.destino === W.origem) W.destino = DATA.listaAeroportos(W.origem)[0];
         W.flight = null;
         W.aviso = "";
         renderWizard();
       });
       $("#bs-des", alvo).addEventListener("change", (e) => {
-        W.destino = e.target.value;
+        const novo = aeroPorTexto(e.target.value);
+        if (!novo || novo === W.destino) { e.target.value = W.destino; return; }
+        W.destino = novo;
+        if (W.destino === W.origem) W.destino = DATA.listaAeroportos(W.origem)[0];
         W.flight = null;
         W.aviso = "";
         renderWizard();
@@ -1075,6 +1078,17 @@
     const A = DATA.AEROS[cod];
     if (!A) return false;
     return normTxt(A.cidade).indexOf(q) === 0 || normTxt(A.nome).indexOf(q) === 0;
+  }
+
+  function aeroPorTexto(q) {
+    const t = normTxt(q);
+    if (!t) return "";
+    return Object.keys(DATA.AEROS).find((k) => {
+      if (k === t) return true;
+      const c = normTxt(DATA.AEROS[k].cidade);
+      if (c === t || c.indexOf(t) === 0) return true;
+      return normTxt(DATA.AEROS[k].nome).indexOf(t) === 0;
+    }) || "";
   }
 
   function filtroReserva() {

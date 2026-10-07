@@ -1258,7 +1258,7 @@
     "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
     "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF",
     "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI",
-    "*LM", "*CM", "*ACM", "*C", "*LB", "*N", "*LT", "*RV", "*LP", "*RM", "*ACC", "*ASS", "*AL", "*CHK", "$PG", "$V",
+    "*LM", "*CM", "*ACM", "*C", "*LR", "*N", "*LT", "*RV", "*LP", "*RM", "*MAV", "*ASS", "*AL", "*CHK", "$PG", "$V",
     "V", "&PT", "&CG", "&VV"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
@@ -1270,9 +1270,9 @@
     "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT", "LM", "ACM"]));
   const PAG_VALORES = ["CARTAO", "CREDITO", "DEBITO", "CAR", "PIX", "BOLETO", "BALCAO", "BALC"];
   const ALIAS_TERM = [
-    ["*ACM", "ACM"], ["*ACC", "ASSENTOS"], ["*CHK", "CHECKIN"], ["*ASS", "ASSENTO"],
+    ["*ACM", "ACM"], ["*MAV", "ASSENTOS"], ["*CHK", "CHECKIN"], ["*ASS", "ASSENTO"],
     ["*CM", "CADASTRAR"], ["*LP", "PASSAGEIROS"], ["*LM", "LM"], ["*LT", "LIMPAR"],
-    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LB", "BILHETES"], ["*AL", "ASSENTOLIVRE"],
+    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LR", "BILHETES"], ["*AL", "ASSENTOLIVRE"],
     ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"],
     ["&PT", "VOOS"], ["&CG", "CHEGADAS"], ["&VV", "AOVIVO"], ["V", "VOOS", 1]
   ];
@@ -1329,7 +1329,7 @@
     ["*CM", "[NOME] CADASTRA CLIENTE E CARTAO"],
     ["*ACM", "[NOME|NUM] ATIVA O CARTAO"],
     ["*C", "CONFIRMA A RESERVA"],
-    ["*LB", "LISTA AS SUAS RESERVAS"],
+    ["*LR", "LISTA AS SUAS RESERVAS"],
     ["*N", "NOVO ATENDIMENTO"],
     ["*LT", "LIMPA A TELA"],
     ["$V", "VALOR DA RESERVA"],
@@ -1337,7 +1337,7 @@
     ["*LP", "[NOME] LISTA OS PASSAGEIROS"],
     ["*RM", "[N] REMOVE O PASSAGEIRO"],
     ["$PG", "[FORMA] FORMA DE PAGAMENTO"],
-    ["*ACC", "MAPA DE ASSENTOS DO VOO"],
+    ["*MAV", "MAPA DE ASSENTOS DO VOO"],
     ["*ASS", "<12A> POLTRONA DO PAX"],
     ["*AL", "ASSENTOS LIVRES AUTOMATICAS"],
     ["*CHK", "<PNR> FAZ O CHECK-IN"],
@@ -1529,7 +1529,7 @@
       " *CM [NOME] .......... CADASTRA O CLIENTE E EMITE O CARTAO DE MILHAS",
       " *ACM [X] ............ ATIVA O CARTAO DE MILHAS (NUMERO OU NOME)",
       " *C .................. CONFIRMA A RESERVA CADASTRADA",
-      " *LB ................. LISTA AS SUAS RESERVAS",
+      " *LR ................. LISTA AS SUAS RESERVAS",
       " *N .................. NOVO ATENDIMENTO",
       " *LT ................. LIMPA A TELA",
       " $V .................. VALOR DA RESERVA",
@@ -1537,7 +1537,7 @@
       " *LP [NOME] .......... LISTA OS PASSAGEIROS DO VOO",
       " *RM [N] ............. REMOVE O PASSAGEIRO",
       " $PG [FORMA] ......... FORMA DE PAGAMENTO",
-      " *ACC ................ MAPA DE ASSENTOS DO VOO",
+      " *MAV ................ MAPA DE ASSENTOS DO VOO",
       " *ASS<12A> ........... POLTRONA DO PAX",
       " *AL ................. ASSENTOS LIVRES AUTOMATICAS",
       " *CHK<PNR> ........... FAZ O CHECK-IN DA RESERVA",

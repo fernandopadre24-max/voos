@@ -1354,7 +1354,8 @@
       termBoot();
       setTimeout(() => { const i = $("#term-in"); if (i) i.focus(); }, 60);
     }
-    if (tab === "aovivo" || tab === "partidas" || tab === "chegadas" || tab === "reserva") LIVE.iniciar(); else LIVE.parar();
+    if (tab === "aovivo" || tab === "partidas" || tab === "chegadas" || tab === "reserva" || tab === "torre") LIVE.iniciar(); else LIVE.parar();
+    if (typeof TORRE !== "undefined") { if (tab === "torre") TORRE.iniciar(); else TORRE.parar(); }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 

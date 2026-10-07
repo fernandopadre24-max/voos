@@ -31,19 +31,19 @@
 </header>
 
 <nav class="tabs" id="tabs">
-  <button class="tab" data-tab="torre">TORRE</button>
+  <button class="tab on" data-tab="torre" aria-current="page">TORRE</button>
   <button class="tab" data-tab="atendimento">ATENDIMENTO</button>
   <button class="tab" data-tab="reserva">RESERVA</button>
   <button class="tab" data-tab="bilhetes">BILHETES <span class="badge" id="badge">0</span></button>
   <button class="tab" data-tab="checkin">CHECK-IN</button>
-  <button class="tab on" data-tab="partidas" aria-current="page">PARTIDAS</button>
+  <button class="tab" data-tab="partidas">PARTIDAS</button>
   <button class="tab" data-tab="chegadas">CHEGADAS</button>
   <button class="tab" data-tab="aovivo">AO VIVO</button>
   <button class="tab tab-som" id="btnSom">SOM : OFF</button>
 </nav>
 
 <main>
-  <section class="view on" id="view-partidas">
+  <section class="view" id="view-partidas">
     <div class="board-head">
       <h1>PARTIDAS <span>/ DEPARTURES</span></h1>
       <div class="board-tools">
@@ -116,7 +116,7 @@
     <p class="hint">POSICOES REAIS DE AERONAVES VIA ADS-B (REDE DE VOLUNTARIOS) · ATUALIZA A CADA 20 S · SNAPSHOT LOCAL SEM CONEXAO</p>
   </section>
 
-  <section class="view" id="view-torre">
+  <section class="view on" id="view-torre">
     <div class="board-head">
       <h1>TORRE DE CONTROLE <span>/ TOWER RADAR</span></h1>
       <div class="board-tools">

@@ -3298,6 +3298,7 @@
     if (barraVivo) barraVivo.addEventListener("click", () => irPara("aovivo"));
     $$(".vivo-int").forEach((el) => el.addEventListener("click", () => irPara("aovivo")));
     LIVE.iniciar();
+    irPara("torre");
 
     setInterval(() => {
       renderBoard("partidas");

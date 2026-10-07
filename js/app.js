@@ -1258,7 +1258,8 @@
     "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
     "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF",
     "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI",
-    "*LM", "*CM", "*ACM", "*C", "*LB", "*N", "*LT", "*RV", "*LP", "*RM", "*ACC", "*ASS", "*AL", "*CHK", "$PG", "$V"];
+    "*LM", "*CM", "*ACM", "*C", "*LB", "*N", "*LT", "*RV", "*LP", "*RM", "*ACC", "*ASS", "*AL", "*CHK", "$PG", "$V",
+    "V", "&PT", "&CG", "&VV"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
     "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS", "CARTAO",
@@ -1272,13 +1273,18 @@
     ["*ACM", "ACM"], ["*ACC", "ASSENTOS"], ["*CHK", "CHECKIN"], ["*ASS", "ASSENTO"],
     ["*CM", "CADASTRAR"], ["*LP", "PASSAGEIROS"], ["*LM", "LM"], ["*LT", "LIMPAR"],
     ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LB", "BILHETES"], ["*AL", "ASSENTOLIVRE"],
-    ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"]
+    ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"],
+    ["&PT", "VOOS"], ["&CG", "CHEGADAS"], ["&VV", "AOVIVO"], ["V", "VOOS", 1]
   ];
   const MESES_AM = { JAN: 0, FEV: 1, FEB: 1, MAR: 2, ABR: 3, APR: 3, MAI: 4, MAY: 4, JUN: 5, JUL: 6,
     AGO: 7, AUG: 7, SET: 8, SEP: 8, OUT: 9, OCT: 9, NOV: 10, DEZ: 11, DEC: 11 };
   const TERM_CMDS = [
     ["VOOS", "[FILTRO] LISTA DE PARTIDAS"],
     ["CHEGADAS", "[FILTRO] LISTA DE CHEGADAS"],
+    ["V", "[FILTRO] LISTA OS VOOS"],
+    ["&PT", "LISTA AS PARTIDAS"],
+    ["&CG", "LISTA AS CHEGADAS"],
+    ["&VV", "VOOS AO VIVO"],
     ["ROTA", "<ORI> <DES> ROTA DO ATENDIMENTO"],
     ["RES", "<ORI> <DES> ESCOLHE O PAR"],
     ["TO", "<DES> FROM <ORI>"],
@@ -1515,6 +1521,10 @@
       " NOVO ................ NOVO ATENDIMENTO (DESCARTA O RASCUNHO)",
       " SOM ON|OFF .......... LIGA OU DESLIGA O SOM DO TABULEIRO",
       " LIMPAR .............. LIMPA A TELA",
+      " V ................... LISTA OS VOOS (ACEITA FILTRO)",
+      " &PT ................. LISTA AS PARTIDAS",
+      " &CG ................. LISTA AS CHEGADAS",
+      " &VV ................. VOOS AO VIVO PROXIMO AO GRU",
       " *LM<NOME|NUM> ....... MILHAS DO CLIENTE (NOME OU CARTAO)",
       " *CM [NOME] .......... CADASTRA O CLIENTE E EMITE O CARTAO DE MILHAS",
       " *ACM [X] ............ ATIVA O CARTAO DE MILHAS (NUMERO OU NOME)",
@@ -2774,7 +2784,7 @@
     let C = partes[0].toUpperCase();
     let arg = partes.slice(1).join(" ");
     const cu = cmd.toUpperCase();
-    const al = ALIAS_TERM.find((x) => cu.indexOf(x[0]) === 0);
+    const al = ALIAS_TERM.find((x) => cu.indexOf(x[0]) === 0 && (!x[2] || cu.length === x[0].length || cu[x[0].length] === " "));
     if (al) { C = al[1]; arg = cu.slice(al[0].length).trim(); }
     if (C === "NM" || /^NM\d/.test(cu)) { C = "NM"; arg = cu.slice(2).trim(); }
     else if (C === "TK" || /^TKTL/.test(cu)) { C = "TK"; arg = cu.slice(2).replace(/^TL/, "").trim(); }

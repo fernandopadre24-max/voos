@@ -1261,7 +1261,7 @@
     "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF",
     "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI",
     "*LM", "*CM", "*ACM", "*C", "*LR", "*N", "*LT", "*RV", "*LP", "*RM", "*MAV", "*ASS", "*AL", "*CHK", "$PG", "$V",
-    "V", "&PT", "&CG", "&VV"];
+    "V", ".PT", ".CH", ".VV"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
     "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS", "CARTAO",
@@ -1276,7 +1276,7 @@
     ["*CM", "CADASTRAR"], ["*LP", "PASSAGEIROS"], ["*LM", "LM"], ["*LT", "LIMPAR"],
     ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LR", "BILHETES"], ["*AL", "ASSENTOLIVRE"],
     ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"],
-    ["&PT", "VOOS"], ["&CG", "CHEGADAS"], ["&VV", "AOVIVO"], ["V", "VOOS", 1]
+    [".PT", "VOOS"], [".CH", "CHEGADAS"], [".VV", "AOVIVO"], ["V", "VOOS", 1]
   ];
   const MESES_AM = { JAN: 0, FEV: 1, FEB: 1, MAR: 2, ABR: 3, APR: 3, MAI: 4, MAY: 4, JUN: 5, JUL: 6,
     AGO: 7, AUG: 7, SET: 8, SEP: 8, OUT: 9, OCT: 9, NOV: 10, DEZ: 11, DEC: 11 };
@@ -1284,9 +1284,9 @@
     ["VOOS", "[FILTRO] LISTA DE PARTIDAS"],
     ["CHEGADAS", "[FILTRO] LISTA DE CHEGADAS"],
     ["V", "[FILTRO] LISTA OS VOOS"],
-    ["&PT", "LISTA AS PARTIDAS"],
-    ["&CG", "LISTA AS CHEGADAS"],
-    ["&VV", "VOOS AO VIVO"],
+    [".PT", "LISTA AS PARTIDAS"],
+    [".CH", "LISTA AS CHEGADAS"],
+    [".VV", "VOOS AO VIVO"],
     ["ROTA", "<ORI> <DES> ROTA DO ATENDIMENTO"],
     ["RES", "<ORI> <DES> ESCOLHE O PAR"],
     ["TO", "<DES> FROM <ORI>"],
@@ -1526,9 +1526,9 @@
       " SOM ON|OFF .......... LIGA OU DESLIGA O SOM DO TABULEIRO",
       " LIMPAR .............. LIMPA A TELA",
       " V ................... LISTA OS VOOS (ACEITA FILTRO)",
-      " &PT ................. LISTA AS PARTIDAS",
-      " &CG ................. LISTA AS CHEGADAS",
-      " &VV ................. VOOS AO VIVO PROXIMO AO GRU",
+      " .PT ................. LISTA AS PARTIDAS",
+      " .CH ................. LISTA AS CHEGADAS",
+      " .VV ................. VOOS AO VIVO PROXIMO AO GRU",
       " *LM<NOME|NUM> ....... MILHAS DO CLIENTE (NOME OU CARTAO)",
       " *CM [NOME] .......... CADASTRA O CLIENTE E EMITE O CARTAO DE MILHAS",
       " *ACM [X] ............ ATIVA O CARTAO DE MILHAS (NUMERO OU NOME)",

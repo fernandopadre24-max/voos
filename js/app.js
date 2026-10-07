@@ -641,6 +641,8 @@
   function renderWizard() {
     const alvo = $("#wizard");
     if (W.step === 1) {
+      const lAntes = $(".lista-voos", alvo);
+      const scrollAntes = lAntes ? lAntes.scrollTop : -1;
       if (W.destino === W.origem) W.destino = DATA.listaAeroportos(W.origem)[0];
       const lista = DATA.gerarVoos("partidas", W.origem, W.destino, W.dia, true)
         .slice()
@@ -695,6 +697,16 @@
       corpo += '<div class="wz-nav"><span></span><button class="btn prim" id="wz-next"' + (W.flight ? "" : " disabled") + ">CONTINUAR &rarr;</button></div>";
       alvo.innerHTML = painel("PASSO 1 / 4 — ORIGEM, DESTINO E DATA", corpo);
       aplicarBusca();
+      const lDepois = $(".lista-voos", alvo);
+      if (lDepois) {
+        if (scrollAntes >= 0) lDepois.scrollTop = scrollAntes;
+        const on = $(".voo-item.on", lDepois);
+        if (on) {
+          const ri = on.getBoundingClientRect();
+          const rc = lDepois.getBoundingClientRect();
+          if (ri.top < rc.top || ri.bottom > rc.bottom) on.scrollIntoView({ block: "nearest" });
+        }
+      }
       $("#bs-busca", alvo).addEventListener("input", (e) => {
         W.busca = e.target.value;
         aplicarBusca();

@@ -1257,7 +1257,8 @@
     "DOC", "EMAIL", "TELEFONE", "CLASSE", "PAGAMENTO", "ASSENTOS", "ASSENTO", "ASSENTOLIVRE", "MALOTA", "PESO",
     "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
     "*R", "*I", "X2", "ER", ".CE", ".CD", ".AE", "SOF",
-    "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI"];
+    "AN", "NM", "AP", "RF", "TK", "SS", "RT", "XE", "XI",
+    "*LM", "*CM", "*ACM", "*C", "*LB", "*N", "*LT", "*RV", "*LP", "*RM", "*ACC", "*ASS", "*AL", "*CHK", "$PG", "$V"];
   const GUIA_CMDS = ["RESERVAR", "PASSAGEIRO", "DOC", "EMAIL", "TELEFONE", "FONE", "ASSENTO", "POLTRONA",
     "ASSENTOLIVRE", "SEATLIVRE", "AUTOSEAT", "CLASSE", "MALOTA", "MALOTAS", "BAGAGEM", "PESO",
     "PAGAMENTO", "PAG", "ADICIONAR", "NOVOPAX", "REMOVER", "EXCLUIR", "ATIVO", "TROCAR", "MILHAS", "CARTAO",
@@ -1265,8 +1266,14 @@
   const CMD_SET = new Set(COMANDOS.concat(["HELP", "?", "ROUTE", "DE", "FROM", "PARA", "DIA", "INFO", "ARRIVALS",
     "AOVIVO", "LIVE", "TRAFEGO", "TARIFAS", "PRECO", "INICIO", "ZERAR", "LISTAPAX", "NOVOPAX", "EXCLUIR", "TROCAR",
     "FONE", "PAG", "MAPA", "POLTRONA", "MALOTAS", "BAGAGEM", "RASCUNHO", "EMITIR", "LOCALIZAR", "PNR",
-    "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT"]));
+    "CHECK-IN", "RESERVAS", "CLEAR", "SEATLIVRE", "AUTOSEAT", "LM", "ACM"]));
   const PAG_VALORES = ["CARTAO", "CREDITO", "DEBITO", "CAR", "PIX", "BOLETO", "BALCAO", "BALC"];
+  const ALIAS_TERM = [
+    ["*ACM", "ACM"], ["*ACC", "ASSENTOS"], ["*CHK", "CHECKIN"], ["*ASS", "ASSENTO"],
+    ["*CM", "CADASTRAR"], ["*LP", "PASSAGEIROS"], ["*LM", "LM"], ["*LT", "LIMPAR"],
+    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LB", "BILHETES"], ["*AL", "ASSENTOLIVRE"],
+    ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"]
+  ];
   const MESES_AM = { JAN: 0, FEV: 1, FEB: 1, MAR: 2, ABR: 3, APR: 3, MAI: 4, MAY: 4, JUN: 5, JUL: 6,
     AGO: 7, AUG: 7, SET: 8, SEP: 8, OUT: 9, OCT: 9, NOV: 10, DEZ: 11, DEC: 11 };
   const TERM_CMDS = [
@@ -1312,6 +1319,22 @@
     ["NOVO", "NOVO ATENDIMENTO (DESCARTA O RASCUNHO)"],
     ["SOM", "ON OU OFF"],
     ["LIMPAR", "LIMPA A TELA"],
+    ["*LM", "[NOME|NUM] MILHAS DO CLIENTE"],
+    ["*CM", "[NOME] CADASTRA CLIENTE E CARTAO"],
+    ["*ACM", "[NOME|NUM] ATIVA O CARTAO"],
+    ["*C", "CONFIRMA A RESERVA"],
+    ["*LB", "LISTA AS SUAS RESERVAS"],
+    ["*N", "NOVO ATENDIMENTO"],
+    ["*LT", "LIMPA A TELA"],
+    ["$V", "VALOR DA RESERVA"],
+    ["*RV", "[VOO] SELECIONA O VOO"],
+    ["*LP", "[NOME] LISTA OS PASSAGEIROS"],
+    ["*RM", "[N] REMOVE O PASSAGEIRO"],
+    ["$PG", "[FORMA] FORMA DE PAGAMENTO"],
+    ["*ACC", "MAPA DE ASSENTOS DO VOO"],
+    ["*ASS", "<12A> POLTRONA DO PAX"],
+    ["*AL", "ASSENTOS LIVRES AUTOMATICAS"],
+    ["*CHK", "<PNR> FAZ O CHECK-IN"],
     ["*R", "EXIBE O PNR EM ANDAMENTO"],
     ["*I", "EXIBE O ITINERARIO"],
     ["X2", "CANCELA O SEGMENTO DO VOO"],
@@ -1492,6 +1515,22 @@
       " NOVO ................ NOVO ATENDIMENTO (DESCARTA O RASCUNHO)",
       " SOM ON|OFF .......... LIGA OU DESLIGA O SOM DO TABULEIRO",
       " LIMPAR .............. LIMPA A TELA",
+      " *LM<NOME|NUM> ....... MILHAS DO CLIENTE (NOME OU CARTAO)",
+      " *CM [NOME] .......... CADASTRA O CLIENTE E EMITE O CARTAO DE MILHAS",
+      " *ACM [X] ............ ATIVA O CARTAO DE MILHAS (NUMERO OU NOME)",
+      " *C .................. CONFIRMA A RESERVA CADASTRADA",
+      " *LB ................. LISTA AS SUAS RESERVAS",
+      " *N .................. NOVO ATENDIMENTO",
+      " *LT ................. LIMPA A TELA",
+      " $V .................. VALOR DA RESERVA",
+      " *RV [VOO] ........... SELECIONA O VOO (EX.: *RV 3)",
+      " *LP [NOME] .......... LISTA OS PASSAGEIROS DO VOO",
+      " *RM [N] ............. REMOVE O PASSAGEIRO",
+      " $PG [FORMA] ......... FORMA DE PAGAMENTO",
+      " *ACC ................ MAPA DE ASSENTOS DO VOO",
+      " *ASS<12A> ........... POLTRONA DO PAX",
+      " *AL ................. ASSENTOS LIVRES AUTOMATICAS",
+      " *CHK<PNR> ........... FAZ O CHECK-IN DA RESERVA",
       " *R .................. EXIBE O PNR EM ANDAMENTO",
       " *I .................. EXIBE O ITINERARIO",
       " X2 .................. CANCELA O SEGMENTO DO VOO",
@@ -1948,6 +1987,42 @@
       "  CARTAO ATIVADO NESTE ATENDIMENTO.",
       "  USE: MILHAS | ADICIONAR MILHAS <E> <N> | ABATER MILHAS NA PASSAGEM <N>"
     ], "sys");
+  }
+
+  function termMilhasCliente(arg) {
+    const a = String(arg || "").trim();
+    const cs = cartoesLer();
+    if (!a) {
+      if (cartaoAtivo()) return milhasListagem();
+      return termErro(semCartaoErro());
+    }
+    const k = normCartao(a);
+    if (cs[k]) { T.cartao = k; return milhasListagem(); }
+    const n = normNome(a);
+    const chave = Object.keys(cs).find((kk) => normNome(cs[kk].nome) === n);
+    if (chave) { T.cartao = chave; return milhasListagem(); }
+    return termErro([
+      "ERRO: CLIENTE OU CARTAO '" + a + "' NAO ENCONTRADO.",
+      "USE: LM <NOME OU NUMERO> | CM <NOME> | ACM"
+    ]);
+  }
+
+  function termAtivarCartao(arg) {
+    const a = String(arg || "").trim();
+    const cs = cartoesLer();
+    if (a) {
+      const k = normCartao(a);
+      if (cs[k]) { T.cartao = k; return termCartao(""); }
+      const n = normNome(a);
+      const chave = Object.keys(cs).find((kk) => normNome(cs[kk].nome) === n);
+      if (chave) { T.cartao = chave; return termCartao(""); }
+      return termErro(["ERRO: CARTAO '" + a + "' NAO ENCONTRADO.", "USE: ACM <NUMERO OU NOME> OU CM <NOME>."]);
+    }
+    if (cartaoAtivo()) return termCartao("");
+    const chaves = Object.keys(cs).sort((x, y) => (cs[y].criado || 0) - (cs[x].criado || 0));
+    if (!chaves.length) return termErro(["ERRO: NENHUM CARTAO DE MILHAS CADASTRADO.", "USE: CM <NOME DO CLIENTE> PARA EMITIR O CARTAO."]);
+    T.cartao = chaves[0];
+    return termCartao("");
   }
 
   function termCartao(arg) {
@@ -2447,13 +2522,18 @@
     termPrint(["OK: ASSENTO " + s + " CONFIRMADO PARA P" + (T.rascunho.ativo + 1) + " NO VOO " + f.no.replace(/\s/g, "")], "sys");
   }
 
-  function termPassageiros() {
+  function termPassageiros(arg) {
     const R = T.rascunho;
+    const f = String(arg || "").trim().toUpperCase();
     const l = [pad("N", 4) + pad("SIT", 5) + pad("DOCUMENTO", 14) + pad("ASSENTO", 9) + "NOME"];
+    let achou = 0;
     R.paxs.forEach((p, i) => {
+      if (f && (p.nome || "").toUpperCase().indexOf(f) < 0) return;
+      achou++;
       l.push(pad(i + 1, 4) + pad(i === R.ativo ? "<-" : "", 5) + pad(p.doc || "---", 14) + pad(p.assento || "---", 9) + (p.nome || "(SEM NOME)"));
     });
     l.push("TOTAL: " + R.paxs.length + " DE " + MAX_PAX + " PASSAGEIROS   USE: ATIVO <N> PARA EDITAR.");
+    if (f) l.push("FILTRO '" + f + "': " + achou + " PASSAGEIRO(S) ENCONTRADO(S).");
     termPrint(l, "sys");
   }
 
@@ -2694,6 +2774,8 @@
     let C = partes[0].toUpperCase();
     let arg = partes.slice(1).join(" ");
     const cu = cmd.toUpperCase();
+    const al = ALIAS_TERM.find((x) => cu.indexOf(x[0]) === 0);
+    if (al) { C = al[1]; arg = cu.slice(al[0].length).trim(); }
     if (C === "NM" || /^NM\d/.test(cu)) { C = "NM"; arg = cu.slice(2).trim(); }
     else if (C === "TK" || /^TKTL/.test(cu)) { C = "TK"; arg = cu.slice(2).replace(/^TL/, "").trim(); }
     else if (C === "AP" || /^AP\d/.test(cu) || /^APE-/.test(cu)) {
@@ -2723,6 +2805,7 @@
     switch (C) {
       case "AJUDA": case "HELP": case "?": return termAjuda();
       case "VOOS": return termVoos(arg);
+      case "LM": return termMilhasCliente(arg);
       case "LISTAR": {
         if (arg.toUpperCase().trim().split(/\s+/)[0] === "MILHAS") return milhasListagem();
         return termVoos(arg);
@@ -2739,13 +2822,14 @@
       case "MILHAS": return termMilhas(arg);
       case "ABATER": return termAbaterMilhas(arg);
       case "CARTAO": if (/MILHAS/.test(String(arg).toUpperCase())) return execCmd("PAGAMENTO", "CARTAO DE MILHAS"); return termCartao(arg);
+      case "ACM": return termAtivarCartao(arg);
       case "CADASTRAR": return termCadastrar(arg);
       case "ASSENTOLIVRE": case "SEATLIVRE": case "AUTOSEAT": return termAssentoLivre();
       case "NOVO": case "INICIO": case "ZERAR": return termNovo();
       case "SOM": return termSom(arg);
       case "RESERVAR": return termReservar(arg);
       case "PASSAGEIRO": return termCampo("nome", arg);
-      case "PASSAGEIROS": case "LISTAPAX": return termPassageiros();
+      case "PASSAGEIROS": case "LISTAPAX": return termPassageiros(arg);
       case "ADICIONAR": case "NOVOPAX": {
         const a = arg.toUpperCase().trim();
         if (a === "MILHAS" || a.indexOf("MILHAS ") === 0) return termAdicionarMilhas(a.replace(/^MILHAS\s*/, ""));

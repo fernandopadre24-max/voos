@@ -156,12 +156,12 @@
   function baseRota(tipo) {
     const r = rota[tipo];
     if (tipo === "partidas") {
-      if (!r.destino) return DATA.departures;
-      if (r.origem === "GRU") return DATA.departures.filter((f) => f.destino === r.destino);
+      if (!r.destino) return DATA.departures.filter(mesmoDia);
+      if (r.origem === "GRU") return DATA.departures.filter((f) => f.destino === r.destino && mesmoDia(f));
       return DATA.gerarVoos("partidas", r.origem, r.destino, 0);
     }
-    if (!r.origem) return DATA.arrivals;
-    if (r.destino === "GRU") return DATA.arrivals.filter((f) => f.origem === r.origem);
+    if (!r.origem) return DATA.arrivals.filter(mesmoDia);
+    if (r.destino === "GRU") return DATA.arrivals.filter((f) => f.origem === r.origem && mesmoDia(f));
     return DATA.gerarVoos("chegadas", r.origem, r.destino, 0);
   }
 
@@ -1254,7 +1254,7 @@
     boot: false, imprimindo: false, fila: [], hist: [], hi: 0, iv: null, pausado: false,
     rascunho: novoRascunho(), rota: null, dia: 0, guia: false, cartao: null
   };
-  const COMANDOS = ["AJUDA", "VOOS", "CHEGADAS", "ROTA", "RES", "TO", "DATA", "SITUACAO", "TARIFA", "VALOR", "MILHAS",
+  const COMANDOS = ["AJUDA", "VOOS", "CHEGADAS", "ROTA", "RES", "TO",     "DATA", "SITUACAO", "ALTERAR", "TARIFA", "VALOR", "MILHAS",
     "LISTAR", "ABATER", "CARTAO", "CADASTRAR", "RESERVAR", "PASSAGEIRO", "PASSAGEIROS", "ADICIONAR", "REMOVER", "ATIVO",
     "DOC", "EMAIL", "TELEFONE", "CLASSE", "PAGAMENTO", "ASSENTOS", "ASSENTO", "ASSENTOLIVRE", "MALOTA", "PESO",
     "STATUS", "CONFIRMAR", "CONSULTAR", "CHECKIN", "CANCELAR", "BILHETES", "NOVO", "SOM", "LIMPAR",
@@ -1293,6 +1293,7 @@
     ["DE", "<ORI> PARA <DES>"],
     ["DATA", "<DIA> DE 0 A 6"],
     ["SITUACAO", "<VOO> SITUACAO EM TEMPO REAL"],
+    ["ALTERAR", "<VOO> [DIA] [HH:MM] MUDA DIA E HORA DO VOO"],
     ["AOVIVO", "TRAFEGO AO VIVO DO GRU"],
     ["TARIFA", "<ORI> <DES> TARIFA E DISTANCIA"],
     ["VALOR", "COMPOSICAO DO VALOR DA RESERVA"],
@@ -1489,6 +1490,7 @@
       " DE <ORI> PARA <DES> ... IGUAL AO TO EM PORTUGUES (EX.: DE GRU PARA SSA)",
       " DATA <DIA> .......... DATA ALVO DE 0 A 6 (EX.: DATA AMANHA)",
       " SITUACAO <VOO> ...... SITUACAO EM TEMPO REAL DO VOO (API REAL SE ATIVA)",
+      " ALTERAR <VOO> ....... MUDA DIA E HORA DO VOO (EX.: ALTERAR LA3375 18:30)",
       " AOVIVO .............. TRAFEGO AO VIVO DE VERDADE PROXIMO AO GRU",
       " TARIFA <ORI> <DES> .. TARIFA, DISTANCIA E DURACAO DA ROTA",
       " VALOR ............... COMPOSICAO DO VALOR DA RESERVA",
@@ -1584,13 +1586,13 @@
   function termLista() {
     if (T.rota) return DATA.gerarVoos("partidas", T.rota.origem, T.rota.destino, T.dia);
     if (T.dia) return null;
-    return DATA.departures;
+    return DATA.departures.filter(mesmoDia);
   }
 
   function termListaChegadas() {
     if (T.rota) return DATA.gerarVoos("chegadas", T.rota.origem, T.rota.destino, T.dia);
     if (T.dia) return null;
-    return DATA.arrivals;
+    return DATA.arrivals.filter(mesmoDia);
   }
 
   function avisoRotaAtual() {
@@ -1749,6 +1751,68 @@
     if (av) l.push(av);
     if (d && !T.rota) l.push("PARA LISTAR OS VOOS DESTA DATA USE: ROTA <ORIGEM> <DESTINO>  EX.: ROTA GRU GIG");
     termPrint(l, "sys");
+  }
+
+  function termAlterar(arg) {
+    const uso = ["ERRO: USE ALTERAR <VOO> [DIA] [HH:MM].", "EX.: ALTERAR LA3375 18:30   ALTERAR LA3375 AMANHA 09:15", "ALTERAR <VOO> RESTAURAR VOLTA AO HORARIO ORIGINAL."];
+    const toks = arg.toUpperCase().split(/\s+/).filter(Boolean);
+    if (!toks.length) return termErro(uso);
+    let dia, ref, reset = false;
+    let i = toks.length;
+    for (i = toks.length - 1; i >= 0; i--) {
+      const t = toks[i];
+      if (t === "RESTAURAR" || t === "ORIGINAL" || t === "PADRAO" || t === "RESET") { reset = true; continue; }
+      if (/^\d{1,2}:\d{1,2}$/.test(t)) {
+        const p = t.split(":");
+        const h = Number(p[0]), m = Number(p[1]);
+        if (h > 23 || m > 59) return termErro(["ERRO: HORA INVALIDA '" + t + "'. USE DE 00:00 A 23:59. EX.: 18:30"]);
+        ref = h * 60 + m;
+        continue;
+      }
+      if (/^\d{3,4}$/.test(t)) {
+        const h = Number(t.slice(0, t.length - 2)), m = Number(t.slice(-2));
+        if (h <= 23 && m <= 59) { ref = h * 60 + m; continue; }
+        break;
+      }
+      if (/^\d{1,2}$/.test(t)) {
+        const d = Number(t);
+        if (d <= DATA.DIAS - 1) { dia = d; continue; }
+        break;
+      }
+      if (t === "HOJE") { dia = 0; continue; }
+      if (t === "AMANHA" || t === "AMANHÃ" || t.indexOf("AMANH") === 0) { dia = 1; continue; }
+      break;
+    }
+    const voo = toks.slice(0, i + 1).join(" ");
+    if (!voo) return termErro(uso);
+    if (!reset && dia === undefined && ref === undefined) return termErro(uso);
+    const n = voo.replace(/\s/g, "");
+    let tipo = "partidas";
+    let f = DATA.departures.find((x) => x.no.replace(/\s/g, "") === n);
+    if (!f) { tipo = "chegadas"; f = DATA.arrivals.find((x) => x.no.replace(/\s/g, "") === n); }
+    if (!f) return termErro(["ERRO: VOO '" + voo + "' NAO ENCONTRADO.", "USE O COMANDO VOOS PARA VER A LISTA."]);
+    if (reset) {
+      const tinha = DATA.restaurar(tipo, n);
+      renderBoard("partidas");
+      renderBoard("chegadas");
+      if (!tinha) return termPrint(["VOO " + n + " JA ESTA NO HORARIO ORIGINAL."], "sys");
+      return termPrint([
+        "RESTAURADO - VOO " + n,
+        "  DATA: " + rotuloDia(0),
+        "  HORARIO: " + hhmm(f.ref),
+        "  SITUACAO: " + statusDe(f)
+      ], "sys");
+    }
+    const e = DATA.alterar(tipo, n, dia, ref);
+    renderBoard("partidas");
+    renderBoard("chegadas");
+    termPrint([
+      "ALTERADO - VOO " + n,
+      "  DATA: " + rotuloDia(e.dia === null ? 0 : e.dia),
+      "  HORARIO: " + hhmm(f.ref),
+      "  SITUACAO: " + statusDe(f),
+      "USE: VOOS PARA LISTAR   OU SITUACAO " + n + " PARA DETALHES."
+    ], "sys");
   }
 
   function termFiltrar(lista, q) {
@@ -2828,6 +2892,7 @@
       case "TO": case "FROM": case "DE": case "PARA": return termTo(C, arg);
       case "DATA": case "DIA": return termData(arg);
       case "SITUACAO": case "INFO": return termSituacao(arg);
+      case "ALTERAR": return termAlterar(arg);
       case "AOVIVO": case "LIVE": case "TRAFEGO": return termAoVivo();
       case "TARIFA": case "TARIFAS": return termTarifa(arg);
       case "VALOR": case "PRECO": return termValor();

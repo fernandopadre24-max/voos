@@ -428,6 +428,9 @@ const DATA = (function () {
   const departures = DEPARTURES.map((f, i) => preparar(f, "partidas", i));
   const arrivals = ARRIVALS.map((f, i) => preparar(f, "chegadas", i));
 
+  const ALT = {};
+  const ORIG = {};
+
   const SEMANA = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
   const MES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
   const DIAS = 7;
@@ -470,9 +473,11 @@ const DATA = (function () {
       const o = tipo === "partidas" ? "GRU" : f.from;
       const d = tipo === "partidas" ? f.to : "GRU";
       if (soReais && real && (o !== origem || d !== destino)) return;
-      itens.push({ f, i });
+      const alt = ALT[chaveAlt(tipo, f.no)];
+      if (alt && alt.dia !== null && alt.dia !== dia) return;
+      itens.push({ f, i, alt });
     });
-    return itens.map(({ f, i }) => {
+    return itens.map(({ f, i, alt }) => {
       let dep, arr, dur;
       if (soReais && real) {
         dep = (horaMin(f.dep) + desloc + 1440) % 1440;
@@ -486,6 +491,10 @@ const DATA = (function () {
         dur = duracaoVoo(km);
         arr = (horaMin(f.arr) + desloc + 1440) % 1440;
         dep = ((arr - dur) % 1440 + 1440) % 1440;
+      }
+      if (alt && alt.ref !== null) {
+        if (tipo === "partidas") { dep = alt.ref; arr = (dep + dur) % 1440; }
+        else { arr = alt.ref; dep = ((arr - dur) % 1440 + 1440) % 1440; }
       }
       const ref = tipo === "partidas" ? dep : arr;
       return {
@@ -512,11 +521,89 @@ const DATA = (function () {
     });
   }
 
+  function chaveAlt(tipo, no) {
+    return tipo + "|" + String(no).toUpperCase().replace(/\s/g, "");
+  }
+
+  function acharStatico(tipo, no) {
+    const k = chaveAlt(tipo, no);
+    const lista = tipo === "partidas" ? departures : arrivals;
+    return lista.find((f) => chaveAlt(tipo, f.no) === k) || null;
+  }
+
+  function snapStatico(f) {
+    const o = { dia: f.dia, data: f.data, ref: f.ref, dep: f.dep, arr: f.arr, gateMudaEm: f.gateMudaEm, cancelado: f.cancelado, delay: f.delay };
+    if (f.semana !== undefined) o.semana = f.semana;
+    return o;
+  }
+
+  function restaurarStatico(tipo, no) {
+    const k = chaveAlt(tipo, no);
+    const f = acharStatico(tipo, no);
+    const o = ORIG[k];
+    if (!f || !o) return;
+    f.dia = o.dia;
+    f.data = o.data;
+    f.ref = o.ref;
+    f.dep = o.dep;
+    f.arr = o.arr;
+    f.gateMudaEm = o.gateMudaEm;
+    f.cancelado = o.cancelado;
+    f.delay = o.delay;
+    if (o.semana !== undefined) f.semana = o.semana;
+    else delete f.semana;
+  }
+
+  function aplicarStatico(tipo, no) {
+    const k = chaveAlt(tipo, no);
+    const e = ALT[k];
+    const f = acharStatico(tipo, no);
+    if (!e || !f) return;
+    if (!ORIG[k]) ORIG[k] = snapStatico(f);
+    restaurarStatico(tipo, no);
+    const dia = e.dia === null ? 0 : e.dia;
+    f.dia = dia;
+    f.data = dataLonga(dia);
+    if (dia) f.semana = dataSemana(dia);
+    else delete f.semana;
+    f.cancelado = dia === 0 ? !!ORIG[k].cancelado : false;
+    f.delay = dia === 0 ? (ORIG[k].delay || 0) : 0;
+    if (e.ref !== null) {
+      if (tipo === "partidas") { f.dep = e.ref; f.arr = (e.ref + f.dur) % 1440; }
+      else { f.arr = e.ref; f.dep = ((e.ref - f.dur) % 1440 + 1440) % 1440; }
+      f.ref = e.ref;
+    } else if (dia !== 0) {
+      f.ref = ((ORIG[k].ref - DELTA) % 1440 + 1440) % 1440;
+      f.dep = ((ORIG[k].dep - DELTA) % 1440 + 1440) % 1440;
+      f.arr = ((ORIG[k].arr - DELTA) % 1440 + 1440) % 1440;
+    }
+    f.gateMudaEm = dia === 0 && f.gate2 ? (f.ref - 70 + 1440) % 1440 : null;
+  }
+
+  function alterar(tipo, no, dia, ref) {
+    const k = chaveAlt(tipo, no);
+    const e = ALT[k] || null;
+    const nd = dia !== undefined ? dia : (ref !== undefined ? null : e ? e.dia : null);
+    const nr = ref !== undefined ? ref : e ? e.ref : null;
+    ALT[k] = { dia: nd, ref: nr };
+    aplicarStatico(tipo, no);
+    return ALT[k];
+  }
+
+  function restaurar(tipo, no) {
+    const k = chaveAlt(tipo, no);
+    const tinha = !!ALT[k];
+    delete ALT[k];
+    restaurarStatico(tipo, no);
+    delete ORIG[k];
+    return tinha;
+  }
+
   function listaAeroportos(excluir) {
     return Object.keys(AEROS)
       .filter((k) => k !== excluir)
       .sort((a, b) => AEROS[a].cidade.localeCompare(AEROS[b].cidade) || a.localeCompare(b));
   }
 
-  return { AIRLINES, PROGRAMAS, DEST, AEROS, departures, arrivals, AVISOS, DELTA, DIAS, DIST, gerarVoos, listaAeroportos, dataCurta, dataLonga, dataSemana };
+  return { AIRLINES, PROGRAMAS, DEST, AEROS, departures, arrivals, AVISOS, DELTA, DIAS, DIST, gerarVoos, listaAeroportos, dataCurta, dataLonga, dataSemana, alterar, restaurar };
 })();

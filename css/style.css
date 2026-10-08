@@ -562,8 +562,9 @@ body:has(#view-reserva.on){padding-bottom:64px}
 .term{
   position:relative;border:1px solid var(--line);background:#020503;
   box-shadow:inset 0 0 70px rgba(60,255,120,.07), 0 0 0 4px #0b0906;
-  padding:16px 18px 14px;color:#4dff8b;font-size:14.5px;line-height:1.5;
+  padding:16px 18px 14px;color:#4dff8b;font-size:var(--term-size,14.5px);font-family:var(--term-font,var(--mono));line-height:1.5;
   text-shadow:0 0 6px rgba(77,255,139,.35);
+  flex:1;min-width:0;
 }
 .term-screen{
   height:clamp(340px,calc(100vh - 329px),100vh);overflow-y:auto;padding-bottom:6px;
@@ -608,6 +609,19 @@ body:has(#view-atendimento.on){padding-bottom:0}
 body:has(#view-atendimento.on) footer{display:none}
 #view-atendimento .board-head{margin-bottom:8px}
 #view-atendimento .hint{margin-top:10px}
+.term-font{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tf-tit{font-size:11px;color:var(--dim);letter-spacing:.14em}
+.tf-btn{
+  background:#0b0906;border:1px solid var(--line);color:var(--amber);
+  padding:6px 10px;font-size:12px;letter-spacing:.08em;cursor:pointer;
+}
+.tf-btn:hover{background:var(--amber);color:#000}
+.tf-val{
+  min-width:44px;text-align:center;color:var(--green);font-size:12.5px;
+  border:1px solid var(--line);padding:6px 4px;cursor:pointer;background:#040a06;
+}
+.tf-val:hover{border-color:var(--green)}
+.tf-sel{font-size:12px;padding:6px 6px;max-width:46vw}
 .term-cols{display:flex;gap:14px;align-items:stretch}
 .term-cmds{
   flex:0 0 340px;min-width:0;display:flex;flex-direction:column;
@@ -616,6 +630,7 @@ body:has(#view-atendimento.on) footer{display:none}
   color:#4dff8b;font-size:12px;line-height:1.45;
   text-shadow:0 0 6px rgba(77,255,139,.35);
 }
+.term-cmds.oculto{display:none}
 .tc-head{
   padding:9px 12px;border-bottom:1px solid #123312;color:#9dffbe;
   letter-spacing:.24em;font-size:11px;

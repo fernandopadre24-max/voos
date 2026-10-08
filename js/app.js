@@ -57,6 +57,8 @@
 
   function salvar() { localStorage.setItem(KEY, JSON.stringify(reservas)); }
   function agoraMin() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  const T0 = Date.now();
+  function decorridoMin() { return (Date.now() - T0) / 60000; }
   function hhmm(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
   function durTxt(m) { return Math.floor(m / 60) + "H" + String(m % 60).padStart(2, "0"); }
   function brl(v) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }); }
@@ -119,7 +121,7 @@
     if (f.cancelado) return "CANCELADO";
     if (f.dia) return "PROGRAMADO";
     const raw = (((f.ref - DATA.DELTA) % 1440) + 1440) % 1440;
-    const rel = 720 - raw - delay;
+    const rel = 720 + decorridoMin() - raw - delay;
     if (f.tipo === "partidas") {
       if (delay && rel >= -60 && rel < -4) return "ATRASADO " + delay + " MIN";
       if (rel < -60) return "PROGRAMADO";
@@ -1419,7 +1421,7 @@
   }
 
   function irPara(tab) {
-    $$(".tab").forEach((t) => {
+    $$(".tab[data-tab]").forEach((t) => {
       const ativa = t.dataset.tab === tab;
       t.classList.toggle("on", ativa);
       if (ativa) t.setAttribute("aria-current", "page");
@@ -2654,10 +2656,12 @@
   function termSom(arg) {
     const a = arg.toUpperCase().replace(/\s+/g, "");
     let ligado = Flap.ehLigado();
-    if (a === "ON" || a === "LIGAR" || a === "1") ligado = true;
+    if (!a) ligado = !ligado;
+    else if (a === "ON" || a === "LIGAR" || a === "1") ligado = true;
     else if (a === "OFF" || a === "DESLIGAR" || a === "0") ligado = false;
-    else if (a) return termErro(["ERRO: USE SOM ON OU SOM OFF."]);
+    else return termErro(["ERRO: USE SOM ON OU SOM OFF."]);
     Flap.som(ligado);
+    if (ligado) Flap.ping();
     const b = $("#btnSom");
     if (b) { b.textContent = "SOM : " + (ligado ? "ON" : "OFF"); b.classList.toggle("on", ligado); }
     termPrint(["SOM DO TABULEIRO: " + (ligado ? "ON" : "OFF")], "sys");
@@ -3298,7 +3302,68 @@
     ], "sys");
   }
 
+  const TERM_PREF_KEY = "voou.term.pref.v1";
+  const TERM_PADRAO = { size: 14.5, font: "", cmds: true };
+  const TERM_FONTES = {
+    "": "var(--mono)",
+    consolas: "Consolas, \"Cascadia Mono\", ui-monospace, monospace",
+    courier: "\"Courier New\", monospace",
+    lucida: "\"Lucida Console\", Monaco, monospace",
+    monaco: "Monaco, \"Lucida Console\", monospace",
+    system: "ui-monospace, \"Cascadia Mono\", Consolas, monospace"
+  };
+  let termPref = { size: TERM_PADRAO.size, font: "", cmds: TERM_PADRAO.cmds };
+
+  function termPrefLer() {
+    try {
+      const j = JSON.parse(localStorage.getItem(TERM_PREF_KEY) || "{}");
+      const s = Number(j.size);
+      if (s >= 11 && s <= 26) termPref.size = s;
+      if (Object.prototype.hasOwnProperty.call(TERM_FONTES, j.font)) termPref.font = j.font;
+      if (typeof j.cmds === "boolean") termPref.cmds = j.cmds;
+    } catch (e) { }
+  }
+
+  function termPrefAplicar() {
+    const t = $("#term");
+    if (t) {
+      t.style.setProperty("--term-size", termPref.size + "px");
+      t.style.setProperty("--term-font", TERM_FONTES[termPref.font] || TERM_FONTES[""]);
+    }
+    const v = $("#tf-val");
+    if (v) v.textContent = String(termPref.size).replace(".", ",");
+    const s = $("#tf-sel");
+    if (s && s.value !== termPref.font) s.value = termPref.font;
+    const c = $("#term-cmds");
+    if (c) c.classList.toggle("oculto", !termPref.cmds);
+    const b = $("#cmd-toggle");
+    if (b) {
+      b.textContent = "COMANDOS : " + (termPref.cmds ? "ON" : "OFF");
+      b.setAttribute("aria-pressed", termPref.cmds ? "true" : "false");
+    }
+  }
+
+  function termPrefSalvar() {
+    try { localStorage.setItem(TERM_PREF_KEY, JSON.stringify(termPref)); } catch (e) { }
+  }
+
+  function termPrefTam(d) {
+    const base = d > 0 ? Math.floor(termPref.size) : Math.ceil(termPref.size);
+    termPref.size = Math.min(26, Math.max(11, base + d));
+    termPrefSalvar();
+    termPrefAplicar();
+  }
+
   function initTerminal() {
+    termPrefLer();
+    termPrefAplicar();
+    const menos = $("#tf-menos"), mais = $("#tf-mais"), sel = $("#tf-sel"), val = $("#tf-val");
+    if (menos) menos.addEventListener("click", () => termPrefTam(-1));
+    if (mais) mais.addEventListener("click", () => termPrefTam(1));
+    if (sel) sel.addEventListener("change", () => { termPref.font = sel.value; termPrefSalvar(); termPrefAplicar(); });
+    if (val) val.addEventListener("click", () => { termPref.size = TERM_PADRAO.size; termPrefSalvar(); termPrefAplicar(); });
+    const cmds = $("#cmd-toggle");
+    if (cmds) cmds.addEventListener("click", () => { termPref.cmds = !termPref.cmds; termPrefSalvar(); termPrefAplicar(); });
     const inp = $("#term-in");
     const echo = $("#term-echo");
     const eco = () => { echo.textContent = inp.value.toUpperCase(); };
@@ -3351,11 +3416,12 @@
     relogio();
     setInterval(relogio, 1000);
 
-    $$(".tab").forEach((t) => t.addEventListener("click", () => irPara(t.dataset.tab)));
+    $$(".tab[data-tab]").forEach((t) => t.addEventListener("click", () => irPara(t.dataset.tab)));
 
     $("#btnSom").addEventListener("click", () => {
       const ligado = !Flap.ehLigado();
       Flap.som(ligado);
+      if (ligado) Flap.ping();
       $("#btnSom").textContent = "SOM : " + (ligado ? "ON" : "OFF");
       $("#btnSom").classList.toggle("on", ligado);
     });

@@ -5,23 +5,33 @@ const Flap = (function () {
   let ctx = null;
   let ultimoSom = 0;
 
+  function tocar(freq, dur, vol) {
+    try {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === "suspended") ctx.resume();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "square";
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + dur + 0.005);
+    } catch (e) {}
+  }
+
   function clique() {
     if (!som) return;
     const agora = performance.now();
     if (agora - ultimoSom < 38) return;
     ultimoSom = agora;
-    try {
-      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "square";
-      o.frequency.value = 1500 + Math.random() * 500;
-      g.gain.setValueAtTime(0.035, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.03);
-      o.connect(g).connect(ctx.destination);
-      o.start();
-      o.stop(ctx.currentTime + 0.035);
-    } catch (e) {}
+    tocar(1500 + Math.random() * 500, 0.03, 0.035);
+  }
+
+  function ping() {
+    tocar(760, 0.05, 0.05);
+    setTimeout(() => tocar(1140, 0.07, 0.05), 70);
   }
 
   function agendar(span, alvo, espera) {
@@ -78,6 +88,7 @@ const Flap = (function () {
   return {
     set,
     som: (v) => { som = v; },
-    ehLigado: () => som
+    ehLigado: () => som,
+    ping
   };
 })();

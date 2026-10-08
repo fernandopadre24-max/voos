@@ -3325,11 +3325,9 @@
   }
 
   function termPrefAplicar() {
-    const t = $("#term");
-    if (t) {
-      t.style.setProperty("--term-size", termPref.size + "px");
-      t.style.setProperty("--term-font", TERM_FONTES[termPref.font] || TERM_FONTES[""]);
-    }
+    const r = document.documentElement;
+    r.style.setProperty("--app-zoom", String(termPref.size / 14.5));
+    r.style.setProperty("--term-font", TERM_FONTES[termPref.font] || TERM_FONTES[""]);
     const v = $("#tf-val");
     if (v) v.textContent = String(termPref.size).replace(".", ",");
     const s = $("#tf-sel");

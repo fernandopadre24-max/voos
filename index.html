@@ -39,7 +39,23 @@
   <button class="tab" data-tab="partidas">PARTIDAS</button>
   <button class="tab" data-tab="chegadas">CHEGADAS</button>
   <button class="tab" data-tab="aovivo">AO VIVO</button>
-  <button class="tab tab-som" id="btnSom">SOM : OFF</button>
+  <div class="tab-tools">
+    <button class="tab tab-som" id="btnSom">SOM : OFF</button>
+    <div class="term-font" title="TAMANHO E FONTE DA LETRA - VALE PARA TODAS AS ABAS">
+      <span class="tf-tit">LETRA</span>
+      <button type="button" class="tf-btn" id="tf-menos" title="REDUZIR O TAMANHO DA LETRA">A-</button>
+      <span class="tf-val" id="tf-val" title="CLIQUE PARA VOLTAR AO TAMANHO PADRAO">14,5</span>
+      <button type="button" class="tf-btn" id="tf-mais" title="AUMENTAR O TAMANHO DA LETRA">A+</button>
+      <select class="sel tf-sel" id="tf-sel" aria-label="Fonte da letra">
+        <option value="">SHARE TECH MONO</option>
+        <option value="consolas">CONSOLAS</option>
+        <option value="courier">COURIER NEW</option>
+        <option value="lucida">LUCIDA CONSOLE</option>
+        <option value="monaco">MONACO</option>
+        <option value="system">MONO DO SISTEMA</option>
+      </select>
+    </div>
+  </div>
 </nav>
 
 <main>
@@ -197,20 +213,6 @@
       <h1>ATENDIMENTO <span>/ BALCAO DAS EMPRESAS</span></h1>
       <div class="board-tools">
         <button type="button" class="tf-btn" id="cmd-toggle" aria-pressed="true" title="EXIBIR OU OCULTAR A LISTA DE COMANDOS">COMANDOS : ON</button>
-        <div class="term-font">
-          <span class="tf-tit">LETRA DO READ</span>
-          <button type="button" class="tf-btn" id="tf-menos" title="REDUZIR O TAMANHO DA LETRA">A-</button>
-          <span class="tf-val" id="tf-val" title="CLIQUE PARA VOLTAR AO TAMANHO PADRAO">14.5</span>
-          <button type="button" class="tf-btn" id="tf-mais" title="AUMENTAR O TAMANHO DA LETRA">A+</button>
-          <select class="sel tf-sel" id="tf-sel" aria-label="Fonte do terminal">
-            <option value="">SHARE TECH MONO</option>
-            <option value="consolas">CONSOLAS</option>
-            <option value="courier">COURIER NEW</option>
-            <option value="lucida">LUCIDA CONSOLE</option>
-            <option value="monaco">MONACO</option>
-            <option value="system">MONO DO SISTEMA</option>
-          </select>
-        </div>
         <span class="upd">TERMINAL REMOTO · DIGITE AJUDA</span>
       </div>
     </div>

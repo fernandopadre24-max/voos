@@ -63,6 +63,7 @@
   function dataHoje() { const d = new Date(); return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear(); }
   function horaAgora() { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0"); }
   function pad(v, n) { v = String(v).toUpperCase(); return v.length > n ? v.slice(0, n) : v.padEnd(n); }
+  function escTxt(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
   function rotaVoo(f) { return [f.origem].concat(f.escala || [], [f.destino]).join(" > "); }
 
@@ -419,6 +420,77 @@
     return !!voo && livres(voo) === 0;
   }
 
+  const NOMES_BR = {
+    m: ["JOAO", "PAULO", "CARLOS", "LUCAS", "MARCOS", "PEDRO", "GABRIEL", "RAFAEL", "BRUNO", "THIAGO", "FELIPE", "MATHEUS", "VITOR", "EDUARDO", "ANDRE", "LEONARDO", "RODRIGO", "DIEGO", "FABIANO", "RENATO", "SERGIO", "CLAUDIO", "RICARDO", "MARCELO", "ALEXANDRE", "DANIEL", "TIAGO", "IGOR", "HENRIQUE", "OTAVIO", "GUSTAVO", "ENZO", "ARTHUR", "MURILO", "OSCAR", "PAULO VITOR"],
+    f: ["MARIA", "ANA", "JULIANA", "CAMILA", "BEATRIZ", "FERNANDA", "PATRICIA", "ADRIANA", "RENATA", "TATIANA", "ALINE", "PRISCILA", "BRUNA", "SABRINA", "VANESSA", "ALESSANDRA", "CRISTINA", "ROBERTA", "MARIANA", "ISABELA", "LAURA", "CAROLINA", "NATALIA", "JULIA", "PAULA", "SIMONE", "CLAUDIA", "LETICIA", "GABRIELA", "AMANDA", "YASMIN", "HELENA", "LUIZA", "MANUELA", "VALERIA", "LARISSA"],
+    s: ["SILVA", "SANTOS", "OLIVEIRA", "SOUZA", "LIMA", "PEREIRA", "COSTA", "RIBEIRO", "MARTINS", "CARVALHO", "ALMEIDA", "ROCHA", "BARBOSA", "GOMES", "FERREIRA", "FERNANDES", "VIEIRA", "PINTO", "CARDOSO", "TEIXEIRA", "CORREIA", "MOREIRA", "CUNHA", "MACHADO", "MENEZES", "DUARTE", "NUNES", "LOPES", "MORAES", "CASTRO", "CAMPOS", "BORGES", "FREITAS", "XAVIER", "ARAUJO", "PACHECO", "QUEIROZ", "RAMOS", "SOARES", "MACEDO"]
+  };
+
+  const NOMES_INT = {
+    m: ["JAMES", "JOHN", "ROBERT", "MICHAEL", "WILLIAM", "DAVID", "RICHARD", "JOSEPH", "THOMAS", "CHARLES", "MATTHEW", "ANTHONY", "MARK", "STEVEN", "PAUL", "ANDREW", "JOSHUA", "KENJI", "TAKESHI", "YUSUF", "OLIVER", "HENRY", "NICHOLAS", "ALEXANDER", "MICHEL", "STEFANO", "HANS", "IVAN", "DMITRI", "RAJ", "ARJUN", "WEI", "MIGUEL", "ANDRES", "LEON", "MARC", "PABLO", "GREGOIRE", "LUKAS", "MATIAS"],
+    f: ["MARY", "PATRICIA", "LINDA", "BARBARA", "ELIZABETH", "JENNIFER", "LISA", "NANCY", "KAREN", "EMMA", "SOPHIA", "OLIVIA", "ISABELLA", "AVA", "CHARLOTTE", "AMELIA", "MIA", "HARPER", "EVELYN", "YUKI", "YUMI", "AYAKO", "FATIMA", "ZARA", "PRIYA", "ANNA", "SOFIA", "ELENA", "INGRID", "GRETA", "CHLOE", "MARTA", "NOEMI", "SIENA", "AISHA", "CLARA"],
+    s: ["SMITH", "JOHNSON", "WILLIAMS", "BROWN", "JONES", "GARCIA", "MILLER", "DAVIS", "RODRIGUEZ", "MARTINEZ", "HERNANDEZ", "LOPEZ", "GONZALEZ", "WILSON", "ANDERSON", "THOMAS", "TAYLOR", "MOORE", "JACKSON", "MARTIN", "LEE", "PEREZ", "THOMPSON", "WHITE", "HARRIS", "SANCHEZ", "CLARK", "RAMIREZ", "LEWIS", "ROBINSON", "WALKER", "YOUNG", "ALLEN", "KING", "WRIGHT", "SCOTT", "TORRES", "NGUYEN", "HILL", "GREEN", "ADAMS", "NELSON", "BAKER", "HALL", "RIVERA", "CAMPBELL", "MITCHELL", "CARTER", "ROBERTS", "MUELLER", "SCHMIDT", "ROSSI", "FERRARI", "ROUSSEAU", "PETROV", "TANAKA", "SUZUKI", "KIM", "CHEN", "SINGH", "PATEL", "KHAN", "HASSAN"]
+  };
+
+  function chavePax(v) {
+    return [v.no, v.origem, v.destino, v.dia || 0, v.tipo || ""].join("|");
+  }
+
+  function docFake(rnd, br) {
+    if (br) {
+      let d = "";
+      for (let i = 0; i < 9; i++) d += Math.floor(rnd() * 10);
+      return d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + String(Math.floor(rnd() * 100)).padStart(2, "0");
+    }
+    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    return A[Math.floor(rnd() * A.length)] + A[Math.floor(rnd() * A.length)] + String(Math.floor(rnd() * 1000000)).padStart(6, "0");
+  }
+
+  function nomeFake(rnd, br) {
+    const P = br ? NOMES_BR : NOMES_INT;
+    const pool = rnd() < 0.5 ? P.f : P.m;
+    let n = pool[Math.floor(rnd() * pool.length)] + " " + P.s[Math.floor(rnd() * P.s.length)];
+    if (rnd() < 0.45) n += " " + P.s[Math.floor(rnd() * P.s.length)];
+    return n;
+  }
+
+  function paxFict(voo, assento, L) {
+    const rnd = mulberry(hash(chavePax(voo) + "#" + assento));
+    const br = rnd() < (internacional(voo) ? 0.45 : 0.88);
+    const fila = parseInt(assento, 10) || 1;
+    return {
+      nome: nomeFake(rnd, br),
+      doc: docFake(rnd, br),
+      assento: assento,
+      classe: fila <= L.exec ? "EXEC" : "ECON",
+      fict: true
+    };
+  }
+
+  function cmpAssento(a, b) {
+    const fa = a.assento === "---" ? 9e9 : parseInt(a.assento, 10);
+    const fb = b.assento === "---" ? 9e9 : parseInt(b.assento, 10);
+    if (fa !== fb) return fa - fb;
+    return String(a.assento).localeCompare(String(b.assento));
+  }
+
+  function manifesto(voo) {
+    const L = layout(voo.ac);
+    const k = chaveVoo(voo);
+    const lista = [];
+    const reais = new Set();
+    reservas.forEach((r) => {
+      if (r.status === "CANCELADA" || chaveVoo(r.voo) !== k) return;
+      paxList(r).forEach((p) => {
+        if (p.assento) reais.add(p.assento);
+        lista.push({ nome: p.nome || "(SEM NOME)", doc: p.doc || "---", assento: p.assento || "---", classe: r.classe, fict: false });
+      });
+    });
+    ocupados(voo).forEach((s) => { if (!reais.has(s)) lista.push(paxFict(voo, s, L)); });
+    lista.sort(cmpAssento);
+    return lista;
+  }
+
   function filaKey(no) {
     return String(no || "").replace(/\s/g, "").toUpperCase();
   }
@@ -601,6 +673,10 @@
 
   function resumoVoo(f) {
     const dia = f.dia || 0;
+    const ps = manifesto(f);
+    const total = totalAssentos(f.ac);
+    const oc = ps.filter((p) => p.assento !== "---").length;
+    const reais = ps.filter((p) => !p.fict).length;
     return `
       <div class="voo-resumo">
         <div class="vr-l">
@@ -617,7 +693,14 @@
           <span>PORTAO ${gateDe(f)}</span>
           <span>${dia ? DATA.dataSemana(dia) + " " + DATA.dataCurta(dia) : "HOJE " + DATA.dataCurta(0)}</span>
         </div>
-      </div>`;
+      </div>
+      <details class="pax-fict">
+        <summary>PASSAGEIROS <b>${oc}/${total}</b> · ${total - oc} LIVRES · LISTA NOMINAL (${ps.length}${reais ? " · " + reais + " DE RESERVA" : ""})</summary>
+        <div class="pf-body">
+          <div class="pf-row pf-hd"><b>ASSENTO</b><b>CLASSE</b><b>DOCUMENTO</b><b>NOME</b></div>
+          ${ps.map((p) => `<div class="pf-row${p.fict ? " fic" : ""}"><b>${escTxt(p.assento)}</b><em>${p.classe}</em><i>${escTxt(p.doc)}</i><span>${escTxt(p.nome.toUpperCase())}</span></div>`).join("")}
+        </div>
+      </details>`;
   }
 
   function aplicarBusca() {
@@ -1400,7 +1483,7 @@
   const ALIAS_TERM = [
     ["*ACM", "ACM"], ["*MAV", "ASSENTOS"], ["*CHK", "CHECKIN"], ["*ASS", "ASSENTO"],
     ["*CM", "CADASTRAR"], ["*LP", "PASSAGEIROS"], ["*LM", "LM"], ["*LT", "LIMPAR"],
-    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LR", "BILHETES"], ["*AL", "ASSENTOLIVRE"], ["*ALLP", "ALLP"],
+    ["*RV", "RESERVAR"], ["*RM", "REMOVER"], ["*LR", "BILHETES"], ["*ALLP", "ALLP"], ["*AL", "ASSENTOLIVRE"],
     ["$PG", "PAGAMENTO"], ["*C", "CONFIRMAR"], ["*N", "NOVO"], ["$V", "VALOR"],
     [".PT", "VOOS"], [".CH", "CHEGADAS"], [".VV", "AOVIVO"], ["V", "VOOS", 1]
   ];
@@ -1421,7 +1504,7 @@
     ["SITUACAO", "<VOO> SITUACAO EM TEMPO REAL"],
     ["ALTERAR", "<VOO> [DIA] [HH:MM] MUDA DIA E HORA DO VOO"],
     ["ESPERA", "<VOO> ENTRA NA LISTA DE ESPERA DO VOO LOTADO"],
-    ["*ALLP", "<VOO> DADOS DE TODOS OS PASSAGEIROS (NOME, ASSENTO, CLASSE)"],
+    ["*ALLP", "<VOO> DADOS DE TODOS OS PASSAGEIROS (NOME, DOCUMENTO, ASSENTO, CLASSE)"],
     ["AOVIVO", "TRAFEGO AO VIVO DO GRU"],
     ["TARIFA", "<ORI> <DES> TARIFA E DISTANCIA"],
     ["VALOR", "COMPOSICAO DO VALOR DA RESERVA"],
@@ -1521,9 +1604,9 @@
   function termEl() { return $("#term-out"); }
   function termRolar() { const el = termEl(); el.scrollTop = el.scrollHeight; }
 
-  function termPrint(linhas, tipo) {
+  function termPrint(linhas, tipo, direto) {
     if (!Array.isArray(linhas)) linhas = [linhas];
-    linhas.forEach((l) => T.fila.push({ t: l === undefined || l === null || l === "" ? " " : String(l), c: tipo || "" }));
+    linhas.forEach((l) => T.fila.push({ t: l === undefined || l === null || l === "" ? " " : String(l), c: tipo || "", d: !!direto }));
     termProximo();
   }
 
@@ -1535,6 +1618,14 @@
     el.className = "to-line" + (item.c ? " " + item.c : "");
     termEl().appendChild(el);
     const txt = item.t;
+    if (item.d) {
+      el.textContent = txt;
+      pintarStatus(el, txt);
+      T.imprimindo = false;
+      termRolar();
+      setTimeout(termProximo, 0);
+      return;
+    }
     let i = 0;
     T.iv = setInterval(() => {
       if (T.pausado) return;
@@ -2021,6 +2112,16 @@
       const fl = FILA[filaKey(f)];
       termPrint("  FILA DE ESPERA (" + filaSize(f) + "): " + fl.map((q, p) => (p + 1) + "." + q.nome).join("   "), "org");
     }
+    const ps = manifesto(f);
+    const total = totalAssentos(f.ac);
+    const oc = ocupados(f).size;
+    const reais = ps.filter((p) => !p.fict).length;
+    termPrint(["  PASSAGEIROS: " + oc + "/" + total + " OCUPADOS · " + (total - oc > 0 ? total - oc + " LIVRES" : "LOTADO") + " · " + reais + " NOMINAIS"], "sys");
+    if (ps.length) {
+      const l = ["  LISTA NOMINAL - " + pad("ASSENTO", 9) + pad("CLASSE", 7) + pad("DOCUMENTO", 16) + "NOME"];
+      ps.forEach((p, i) => l.push("  " + pad(i + 1 + ".", 5) + pad(p.assento, 9) + pad(p.classe, 7) + pad(p.doc, 16) + p.nome.toUpperCase()));
+      termPrint(l, "", true);
+    }
     situacaoReal(f).then(function (linhas) {
       if (linhas.length) termPrint(linhas, "hl");
     }).catch(function () {});
@@ -2043,28 +2144,25 @@
   }
 
   function termAllp(arg) {
-    if (!arg.trim()) return termErro(["ERRO: USE *ALLP <VOO>. EX.: *ALLP LA3375", "LISTA OS DADOS DE TODOS OS PASSAGEIROS DO VOO (NOME, ASSENTO E CLASSE)."]);
+    if (!arg.trim()) return termErro(["ERRO: USE *ALLP <VOO>. EX.: *ALLP LA3375", "LISTA OS DADOS DE TODOS OS PASSAGEIROS DO VOO (NOME, DOCUMENTO, ASSENTO E CLASSE)."]);
     const achado = termAcharVoo(arg, termLista() || []);
     if (achado.erro) return termErro(achado.erro);
     if (achado.multi) return termPrint(achado.multi);
     const f = achado.voo;
-    const k = chaveVoo(f);
-    const rs = reservas.filter((r) => r.status !== "CANCELADA" && chaveVoo(r.voo) === k);
+    const ps = manifesto(f);
     const l = [
       "PASSAGEIROS DO VOO " + f.no.replace(/\s/g, "") + " - " + rotaVoo(f) + "  " + (f.data || dataHoje()) + " " + hhmm(f.ref) + "  " + f.ac,
-      pad("N", 4) + pad("ASSENTO", 9) + pad("CLASSE", 10) + "NOME"
+      pad("N", 5) + pad("ASSENTO", 9) + pad("CLASSE", 7) + pad("DOCUMENTO", 16) + "NOME"
     ];
-    const seats = new Set();
-    let n = 0;
-    rs.forEach((r) => paxList(r).forEach((p) => {
-      n++;
-      if (p.assento) seats.add(p.assento);
-      l.push(pad(n + ".", 4) + pad(p.assento || "---", 9) + pad(r.classe, 10) + (p.nome || "").toUpperCase());
-    }));
-    const simulados = ocupados(f).size - seats.size;
-    if (!n) l.push("NENHUMA RESERVA NOMINAL PARA ESTE VOO AINDA.");
-    l.push("TOTAL: " + n + " PASSAGEIRO(S) NOMINAL(IS)  ·  " + (simulados > 0 ? simulados + " ASSENTO(S) OCUPADO(S) DA SIMULACAO (SEM NOME)" : "TODOS OS ASSENTOS IDENTIFICADOS"));
-    termPrint(l);
+    let reais = 0;
+    ps.forEach((p, i) => {
+      if (!p.fict) reais++;
+      l.push(pad(i + 1 + ".", 5) + pad(p.assento, 9) + pad(p.classe, 7) + pad(p.doc, 16) + p.nome.toUpperCase());
+    });
+    if (!ps.length) l.push("NENHUM PASSAGEIRO PARA ESTE VOO.");
+    else if (!reais) l.push("NENHUMA RESERVA NOMINAL PARA ESTE VOO (TODOS DA SIMULACAO).");
+    l.push("TOTAL: " + ps.length + " PASSAGEIRO(S) · " + reais + " NOMINAL(IS) · " + (ps.length - reais) + " DA SIMULACAO");
+    termPrint(l, "", true);
   }
 
   function termTarifa(arg) {
